@@ -1,0 +1,88 @@
+@if (clinic(); as c) {
+  <header
+    class="clinic-header"
+    [style.--brand]="c.primaryColor"
+    [style.--brand-accent]="c.accentColor"
+    [style.--on-brand]="headerText()"
+  >
+    <a class="back-link" routerLink="/clinics"
+      ><mat-icon>arrow_back</mat-icon>{{ 'clinic.back' | translate }}</a
+    >
+    <div class="clinic-header-main">
+      <div>
+        <h1>{{ displayName() }}</h1>
+        <div class="clinic-header-meta">
+          <code dir="ltr">{{ c.slug }}</code>
+          <app-status-chip [status]="c.status" />
+          @if (c.hasApiKey) {
+            <span class="key-pill"
+              ><mat-icon>key</mat-icon><code dir="ltr">ck_{{ c.apiKeyPrefix }}…</code></span
+            >
+          }
+          <span class="accent-bar" aria-hidden="true"></span>
+        </div>
+      </div>
+      <div class="clinic-actions">
+        @if (c.status !== 'Suspended') {
+          <button
+            mat-flat-button
+            type="button"
+            class="on-brand"
+            [disabled]="running() || busy()"
+            (click)="provision()"
+          >
+            <mat-icon>rocket_launch</mat-icon>{{ provisionLabel() | translate }}
+          </button>
+        }
+        @if (c.status === 'Active') {
+          <button
+            mat-stroked-button
+            type="button"
+            class="on-brand-outline"
+            [disabled]="running() || busy()"
+            (click)="syncConfig()"
+          >
+            <mat-icon>sync</mat-icon>{{ 'actions.sync' | translate }}
+          </button>
+        }
+        <button mat-stroked-button type="button" class="on-brand-outline" (click)="rotateKey()">
+          <mat-icon>key</mat-icon>{{ 'actions.rotateKey' | translate }}
+        </button>
+        <button mat-stroked-button type="button" class="on-brand-outline" (click)="toggleSuspend()">
+          <mat-icon>{{ c.status === 'Suspended' ? 'play_circle' : 'pause_circle' }}</mat-icon>
+          {{ (c.status === 'Suspended' ? 'actions.activate' : 'actions.suspend') | translate }}
+        </button>
+      </div>
+    </div>
+    @if (running()) {
+      <mat-progress-bar mode="indeterminate" />
+    }
+  </header>
+
+  @if (c.status === 'Suspended') {
+    <p class="warn-note"><mat-icon>pause_circle</mat-icon>{{ 'suspend.banner' | translate }}</p>
+  }
+  @if (c.status === 'Failed') {
+    <p class="warn-note error"><mat-icon>error</mat-icon>{{ 'clinic.failedBanner' | translate }}</p>
+  }
+
+  <mat-tab-group class="clinic-tabs" animationDuration="0ms" [mat-stretch-tabs]="false">
+    <mat-tab [label]="'tabs.features' | translate">
+      <div class="tab-body"><app-features-tab [clinic]="c" (changed)="load()" /></div>
+    </mat-tab>
+    <mat-tab [label]="'tabs.brand' | translate">
+      <div class="tab-body"><app-brand-tab [clinic]="c" (changed)="load()" /></div>
+    </mat-tab>
+    <mat-tab [label]="'tabs.repos' | translate">
+      <div class="tab-body"><app-repos-tab [clinic]="c" /></div>
+    </mat-tab>
+    <mat-tab [label]="'tabs.jobs' | translate">
+      <div class="tab-body"><app-jobs-tab [clinic]="c" /></div>
+    </mat-tab>
+    <mat-tab [label]="'tabs.audit' | translate">
+      <div class="tab-body"><app-audit-tab [clinicId]="c.id" [refreshKey]="auditKey()" /></div>
+    </mat-tab>
+  </mat-tab-group>
+} @else {
+  <mat-progress-bar mode="indeterminate" />
+}

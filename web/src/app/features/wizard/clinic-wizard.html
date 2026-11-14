@@ -1,0 +1,260 @@
+<div class="page-head">
+  <div>
+    <h1>{{ 'wizard.title' | translate }}</h1>
+    <p class="muted">{{ 'wizard.subtitle' | translate }}</p>
+  </div>
+  <a mat-button routerLink="/clinics">{{ 'common.cancel' | translate }}</a>
+</div>
+
+<mat-stepper linear #stepper class="wizard" (selectionChange)="onStep($event.selectedIndex)">
+  <!-- 1. Identity -->
+  <mat-step [stepControl]="identity" [label]="'wizard.steps.identity' | translate">
+    <form [formGroup]="identity" class="form-grid" novalidate>
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'identity.nameEn' | translate }}</mat-label>
+        <input matInput formControlName="nameEn" dir="ltr" />
+        @if (identity.controls.nameEn.errors?.['required']) {
+          <mat-error>{{ 'validation.required' | translate }}</mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'identity.nameAr' | translate }}</mat-label>
+        <input matInput formControlName="nameAr" dir="rtl" />
+        @if (identity.controls.nameAr.errors?.['required']) {
+          <mat-error>{{ 'validation.required' | translate }}</mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'identity.slug' | translate }}</mat-label>
+        <input matInput formControlName="slug" dir="ltr" (input)="markSlugEdited()" />
+        <mat-hint>{{ 'identity.slugHint' | translate }}</mat-hint>
+        @if (identity.controls.slug.errors?.['server']) {
+          <mat-error>{{ 'wizard.slugTaken' | translate }}</mat-error>
+        } @else if (identity.controls.slug.errors) {
+          <mat-error>{{ 'validation.slug' | translate }}</mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'identity.supportPhone' | translate }}</mat-label>
+        <input matInput formControlName="supportPhone" dir="ltr" placeholder="+201000000000" />
+        @if (identity.controls.supportPhone.errors) {
+          <mat-error>{{ 'validation.phone' | translate }}</mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'identity.taglineEn' | translate }}</mat-label>
+        <input matInput formControlName="taglineEn" dir="ltr" />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'identity.taglineAr' | translate }}</mat-label>
+        <input matInput formControlName="taglineAr" dir="rtl" />
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="span-2">
+        <mat-label>{{ 'identity.domain' | translate }}</mat-label>
+        <input matInput formControlName="domain" dir="ltr" placeholder="smilecare.example" />
+        <mat-hint>{{ 'identity.domainHint' | translate }}</mat-hint>
+        @if (identity.controls.domain.errors) {
+          <mat-error>{{ 'validation.domain' | translate }}</mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'identity.androidId' | translate }}</mat-label>
+        <input
+          matInput
+          formControlName="androidApplicationId"
+          dir="ltr"
+          (input)="markAppIdEdited('android')"
+        />
+        @if (identity.controls.androidApplicationId.errors) {
+          <mat-error>{{ 'validation.appId' | translate }}</mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'identity.iosId' | translate }}</mat-label>
+        <input matInput formControlName="iosBundleId" dir="ltr" (input)="markAppIdEdited('ios')" />
+        @if (identity.controls.iosBundleId.errors) {
+          <mat-error>{{ 'validation.appId' | translate }}</mat-error>
+        }
+      </mat-form-field>
+    </form>
+    <div class="step-actions">
+      <button mat-flat-button matStepperNext type="button" (click)="identity.markAllAsTouched()">
+        {{ 'common.next' | translate }}
+      </button>
+    </div>
+  </mat-step>
+
+  <!-- 2. Brand -->
+  <mat-step [stepControl]="brand" [label]="'wizard.steps.brand' | translate">
+    <div class="brand-step">
+      <form [formGroup]="brand" class="brand-form" novalidate>
+        <div class="color-row">
+          <label class="color-field">
+            <span>{{ 'brand.primary' | translate }}</span>
+            <span class="color-inputs">
+              <input
+                type="color"
+                [value]="colorOf('primaryColor')"
+                (input)="setColor('primaryColor', $any($event.target).value)"
+                [attr.aria-label]="'brand.primary' | translate"
+              />
+              <input class="hex" formControlName="primaryColor" dir="ltr" maxlength="7" />
+            </span>
+          </label>
+          <label class="color-field">
+            <span>{{ 'brand.accent' | translate }}</span>
+            <span class="color-inputs">
+              <input
+                type="color"
+                [value]="colorOf('accentColor')"
+                (input)="setColor('accentColor', $any($event.target).value)"
+                [attr.aria-label]="'brand.accent' | translate"
+              />
+              <input class="hex" formControlName="accentColor" dir="ltr" maxlength="7" />
+            </span>
+          </label>
+        </div>
+        @if (brand.invalid) {
+          <p class="form-error">{{ 'validation.color' | translate }}</p>
+        }
+
+        <div class="logo-box">
+          <h3>{{ 'brand.logo' | translate }}</h3>
+          <p class="muted">{{ 'brand.logoHint' | translate }}</p>
+          <div class="logo-actions">
+            <label class="mat-mdc-outlined-button mdc-button mdc-button--outlined file-btn">
+              <mat-icon>upload</mat-icon>
+              <span>{{ 'brand.upload' | translate }}</span>
+              <input
+                type="file"
+                accept=".svg,image/svg+xml"
+                class="visually-hidden"
+                (change)="onLogo($event)"
+              />
+            </label>
+            @if (logoSvg()) {
+              <span class="chip status-active">{{ 'brand.logoSet' | translate }}</span>
+              <button mat-button type="button" (click)="removeLogo()">
+                {{ 'brand.removeLogo' | translate }}
+              </button>
+            }
+          </div>
+          @if (logoError()) {
+            <p class="form-error" role="alert">{{ logoError() | translate }}</p>
+          }
+        </div>
+      </form>
+      <app-brand-preview [brand]="brandValues()" />
+    </div>
+    <div class="step-actions">
+      <button mat-button matStepperPrevious type="button">{{ 'common.back' | translate }}</button>
+      <button mat-flat-button matStepperNext type="button">{{ 'common.next' | translate }}</button>
+    </div>
+  </mat-step>
+
+  <!-- 3. Features -->
+  <mat-step [label]="'wizard.steps.features' | translate">
+    @for (g of groups(); track g.group) {
+      <section class="feature-group">
+        <h3>{{ 'groups.' + g.group | translate }}</h3>
+        <div class="feature-list">
+          @for (f of g.items; track f.key) {
+            <div class="feature-row" [class.soon]="!f.available">
+              <div class="feature-text">
+                <strong>{{ featureName(f) }}</strong>
+                @if (!f.available) {
+                  <span class="badge-soon">{{ 'features.comingSoon' | translate }}</span>
+                }
+                @if (f.createsRepo) {
+                  <span class="badge-repo"
+                    ><mat-icon>folder_special</mat-icon
+                    >{{
+                      'features.createsRepo'
+                        | translate: { kind: ('repoKind.' + f.createsRepo | translate) }
+                    }}</span
+                  >
+                }
+                <small>{{ featureDescription(f) }}</small>
+              </div>
+              <mat-slide-toggle
+                [checked]="features()[f.key]"
+                [disabled]="!f.available"
+                (change)="toggle(f.key, $event.checked)"
+                [aria-label]="featureName(f)"
+              />
+            </div>
+          }
+        </div>
+      </section>
+    }
+    <div class="step-actions">
+      <button mat-button matStepperPrevious type="button">{{ 'common.back' | translate }}</button>
+      <button mat-flat-button matStepperNext type="button">{{ 'common.next' | translate }}</button>
+    </div>
+  </mat-step>
+
+  <!-- 4. Review -->
+  <mat-step [label]="'wizard.steps.review' | translate">
+    @if (previewLoading()) {
+      <mat-progress-spinner mode="indeterminate" diameter="32" />
+    }
+    @if (previewError()) {
+      <p class="form-error" role="alert">{{ previewError() | translate }}</p>
+    }
+    @if (preview(); as p) {
+      <div class="review-grid">
+        <section>
+          <h3>{{ 'review.config' | translate }}</h3>
+          <p class="muted">{{ 'review.configHint' | translate }}</p>
+          <pre class="code-block" dir="ltr">{{ p.config | json }}</pre>
+        </section>
+        <section>
+          <h3>{{ 'review.repos' | translate }}</h3>
+          <p class="muted">{{ 'review.reposHint' | translate }}</p>
+          <ul class="repo-plan">
+            @for (r of p.repos; track r) {
+              <li>
+                <mat-icon>folder</mat-icon><code dir="ltr">{{ r }}</code>
+              </li>
+            }
+          </ul>
+          <div class="dryrun-box">
+            <mat-checkbox
+              [checked]="forcedDryRun() || dryRun()"
+              [disabled]="forcedDryRun()"
+              (change)="dryRun.set($event.checked)"
+            >
+              {{ 'review.dryRun' | translate }}
+            </mat-checkbox>
+            <p class="muted">
+              {{
+                (forcedDryRun()
+                  ? 'review.dryRunForced'
+                  : dryRun()
+                    ? 'review.dryRunOn'
+                    : 'review.dryRunOff'
+                ) | translate
+              }}
+            </p>
+          </div>
+        </section>
+      </div>
+    }
+    <div class="step-actions">
+      <button mat-button matStepperPrevious type="button">{{ 'common.back' | translate }}</button>
+      <button
+        mat-flat-button
+        type="button"
+        [disabled]="!preview() || submitting()"
+        (click)="create()"
+      >
+        @if (submitting()) {
+          <mat-progress-spinner mode="indeterminate" diameter="18" />
+        } @else {
+          <mat-icon>rocket_launch</mat-icon>
+        }
+        {{ 'review.create' | translate }}
+      </button>
+    </div>
+  </mat-step>
+</mat-stepper>
