@@ -1,9 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 
 import { provideMockApi, provideTestTranslations } from '../../../testing/test-providers';
+import { resetMockDb } from '../../core/mock/mock-backend';
 import { ClinicsList } from './clinics-list';
 
 describe('ClinicsList', () => {
+  beforeEach(() => resetMockDb());
+
   it('shows each clinic with its status, brand colour and feature count', async () => {
     TestBed.configureTestingModule({
       providers: [...provideMockApi(), ...provideTestTranslations('en')],

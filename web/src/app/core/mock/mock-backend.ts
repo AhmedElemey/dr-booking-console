@@ -259,7 +259,12 @@ function seed(): Db {
   };
 }
 
-const db: Db = seed();
+let db: Db = seed();
+
+/** Restores the seeded fixtures; tests call it so one test's writes never leak into another. */
+export function resetMockDb(): void {
+  db = seed();
+}
 
 function problem(
   status: number,
