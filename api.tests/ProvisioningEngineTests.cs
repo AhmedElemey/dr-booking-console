@@ -108,6 +108,8 @@ public sealed class ProvisioningEngineTests(PostgresFixture pg) : IClassFixture<
 
         Assert.Equal(
             [
+                "GET repos/templates/dr-booking-backend/contents/clinic.config.json",
+                "GET repos/templates/dr-booking-dashboard/contents/clinic.config.json",
                 "POST repos/templates/dr-booking-backend/generate",
                 "GET repos/acme/smile-a-backend",
                 "GET repos/acme/smile-a-backend/contents/clinic.config.json",
@@ -304,5 +306,96 @@ public sealed class ProvisioningEngineTests(PostgresFixture pg) : IClassFixture<
         var failed = (await db.Jobs.SingleAsync(j => j.Id == jobId)).GetSteps().Single(s => s.Status == StepStatus.Failed);
         Assert.Equal("validate", failed.Name);
         Assert.Contains("GitHub__Token", failed.Message);
+    }
+
+    [Fact]
+    public async Task Validate_checks_every_template_in_use_and_only_those()
+    {
+        var (_, jobId) = await SeedAsync("smile-j", mobile: false, website: false);
+        var fake = new FakeGitHub();
+        await RunAsync(jobId, fake);
+
+        var lookups = fake.Calls.Where(c => c.StartsWith("GET repos/templates/", StringComparison.Ordinal)).ToArray();
+        Assert.Equal(
+            ["GET repos/templates/dr-booking-backend/contents/clinic.config.json", "GET repos/templates/dr-booking-dashboard/contents/clinic.config.json"],
+            lookups);
+    }
+
+    [Fact]
+    public async Task A_template_without_clinic_config_fails_validate_early_naming_the_template_and_its_default_branch()
+    {
+        var (clinicId, jobId) = await SeedAsync("smile-k", mobile: false, website: false);
+        var fake = new FakeGitHub();
+        fake.Templates["dr-booking-dashboard"] = ("develop", false);
+        await RunAsync(jobId, fake);
+
+        await using var db = pg.NewDb();
+        var job = await db.Jobs.SingleAsync(j => j.Id == jobId);
+        Assert.Equal(JobStatus.Failed, job.Status);
+        var failed = job.GetSteps().Single(s => s.Status == StepStatus.Failed);
+        Assert.Equal("validate", failed.Name);
+        Assert.Contains("templates/dr-booking-dashboard", failed.Message);
+        Assert.Contains("default branch (develop)", failed.Message);
+        Assert.Contains("clinic.config.json", failed.Message);
+        // Nothing was created before the failure.
+        Assert.Empty(fake.Repos);
+        Assert.DoesNotContain(fake.Calls, c => c.Contains("/generate", StringComparison.Ordinal));
+        Assert.Equal(ClinicStatus.Failed, (await db.Clinics.SingleAsync(c => c.Id == clinicId)).Status);
+    }
+
+    [Fact]
+    public async Task A_template_that_is_not_in_use_is_not_checked()
+    {
+        var (_, jobId) = await SeedAsync("smile-l", mobile: false, website: false);
+        var fake = new FakeGitHub();
+        fake.Templates["dr-booking-mobile"] = ("main", false);
+        await RunAsync(jobId, fake);
+
+        await using var db = pg.NewDb();
+        Assert.Equal(JobStatus.Succeeded, (await db.Jobs.SingleAsync(j => j.Id == jobId)).Status);
+    }
+
+    [Fact]
+    public async Task A_template_the_token_cannot_see_fails_validate_with_a_not_found_message()
+    {
+        var (_, jobId) = await SeedAsync("smile-m", mobile: false, website: false);
+        var fake = new FakeGitHub();
+        fake.Templates.Remove("dr-booking-backend");
+        await RunAsync(jobId, fake);
+
+        await using var db = pg.NewDb();
+        var failed = (await db.Jobs.SingleAsync(j => j.Id == jobId)).GetSteps().Single(s => s.Status == StepStatus.Failed);
+        Assert.Equal("validate", failed.Name);
+        Assert.Contains("templates/dr-booking-backend was not found", failed.Message);
+    }
+
+    [Fact]
+    public async Task An_existing_repository_without_clinic_config_fails_immediately_instead_of_timing_out()
+    {
+        var (_, jobId) = await SeedAsync("smile-n", mobile: false, website: false);
+        var fake = new FakeGitHub();
+        fake.Repos["smile-n-backend"] = new() { ["README.md"] = ("sha-readme", "hello\n") };
+        var original = Gh.ReadyTimeoutSeconds;
+        Gh.ReadyTimeoutSeconds = 60;
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        try
+        {
+            await RunAsync(jobId, fake);
+        }
+        finally
+        {
+            Gh.ReadyTimeoutSeconds = original;
+        }
+
+        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(30));
+        await using var db = pg.NewDb();
+        var job = await db.Jobs.SingleAsync(j => j.Id == jobId);
+        Assert.Equal(JobStatus.Failed, job.Status);
+        var failed = job.GetSteps().Single(s => s.Status == StepStatus.Failed);
+        Assert.Equal("repo:backend", failed.Name);
+        Assert.Contains("acme/smile-n-backend already exists", failed.Message);
+        Assert.Contains("not a copy of the current dr-booking-backend template", failed.Message);
+        // Exactly one contents lookup: no polling.
+        Assert.Equal(1, fake.Calls.Count(c => c == "GET repos/acme/smile-n-backend/contents/clinic.config.json"));
     }
 }

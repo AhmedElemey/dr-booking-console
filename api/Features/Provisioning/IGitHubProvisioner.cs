@@ -9,8 +9,9 @@ public sealed record StepOutcome(string Message, bool Skipped = false);
 // The GitHub side of provisioning, one call per engine action. Implementations must be idempotent.
 public interface IGitHubProvisioner
 {
-    // Fails with a readable message when the mode cannot work (for example the token is not configured).
-    Task<StepOutcome> ValidateAsync(CancellationToken ct);
+    // Fails with a readable message when the mode cannot work (for example the token is not configured, or a
+    // template that this run will use has no clinic.config.json at the root of its default branch).
+    Task<StepOutcome> ValidateAsync(IReadOnlyCollection<RepoKind> kinds, CancellationToken ct);
 
     // Creates {owner}/{repoName} from the template of `kind` (or reuses it) and waits until its files exist.
     Task<RepoOutcome> EnsureRepoAsync(RepoKind kind, string repoName, CancellationToken ct);

@@ -77,7 +77,7 @@ public sealed class ProvisioningEngine(
         {
             current = ValidateStep;
             await Mark(current, StepStatus.Running, null);
-            var validation = await gh.ValidateAsync(ct);
+            var validation = await gh.ValidateAsync(ClinicConfigBuilder.RequiredRepos(features), ct);
             if (!ClinicValidation.IsValidSlug(clinic.Slug))
             {
                 throw new ProvisioningException($"The clinic slug \"{clinic.Slug}\" is not valid.");
