@@ -28,7 +28,7 @@ public sealed class GitHubRestProvisioner(HttpClient http, IOptions<GitHubOption
         }
     }
 
-    public Task<StepOutcome> ValidateAsync(CancellationToken ct)
+    public async Task<StepOutcome> ValidateAsync(IReadOnlyCollection<RepoKind> kinds, CancellationToken ct)
     {
         var missing = new List<string>();
         if (string.IsNullOrEmpty(_gh.Token))
@@ -41,9 +41,50 @@ public sealed class GitHubRestProvisioner(HttpClient http, IOptions<GitHubOption
             missing.Add("GitHub__Owner");
         }
 
-        return missing.Count > 0
-            ? throw new ProvisioningException($"GitHub is not configured: set {string.Join(" and ", missing)}.")
-            : Task.FromResult(new StepOutcome($"GitHub configured for owner {_gh.Owner}."));
+        if (missing.Count > 0)
+        {
+            throw new ProvisioningException($"GitHub is not configured: set {string.Join(" and ", missing)}.");
+        }
+
+        // A repo generated from a template without clinic.config.json can never be configured, so say so up
+        // front instead of waiting for the copy to time out.
+        var templateOwner = _gh.TemplateOwnerOrOwner;
+        foreach (var kind in kinds.Distinct())
+        {
+            var template = DryRunProvisioner.TemplateName(_gh.Templates, kind);
+            await EnsureTemplateHasConfigAsync(templateOwner, template, ct);
+        }
+
+        return new StepOutcome($"GitHub configured for owner {_gh.Owner}; {kinds.Count} template(s) carry clinic.config.json.");
+    }
+
+    // The contents API without a ref reads the repository's default branch, which is what "generate" copies.
+    private async Task EnsureTemplateHasConfigAsync(string templateOwner, string template, CancellationToken ct)
+    {
+        using (var file = await http.GetAsync($"repos/{templateOwner}/{template}/contents/clinic.config.json", ct))
+        {
+            if (file.IsSuccessStatusCode)
+            {
+                return;
+            }
+
+            if (file.StatusCode != HttpStatusCode.NotFound)
+            {
+                await EnsureSuccessAsync(file, ct);
+            }
+        }
+
+        using var repo = await http.GetAsync($"repos/{templateOwner}/{template}", ct);
+        if (repo.StatusCode == HttpStatusCode.NotFound)
+        {
+            throw new ProvisioningException($"Template repository {templateOwner}/{template} was not found, or the GitHub token cannot read it.");
+        }
+
+        await EnsureSuccessAsync(repo, ct);
+        using var doc = JsonDocument.Parse(await repo.Content.ReadAsStringAsync(ct));
+        var branch = doc.RootElement.TryGetProperty("default_branch", out var b) ? b.GetString() : null;
+        throw new ProvisioningException(
+            $"Template {templateOwner}/{template} has no clinic.config.json at the root of its default branch ({(string.IsNullOrEmpty(branch) ? "unknown" : branch)}). Add the file to that branch, or point the template setting at a repository that has it.");
     }
 
     public async Task<RepoOutcome> EnsureRepoAsync(RepoKind kind, string repoName, CancellationToken ct)
@@ -84,7 +125,22 @@ public sealed class GitHubRestProvisioner(HttpClient http, IOptions<GitHubOption
             }
         }
 
-        await WaitForConfigAsync(repoName, ct);
+        if (reused)
+        {
+            // Nothing will ever copy files into a repository that already exists, so do not wait for them.
+            using var existing = await http.GetAsync($"repos/{_gh.Owner}/{repoName}/contents/clinic.config.json", ct);
+            if (existing.StatusCode == HttpStatusCode.NotFound)
+            {
+                throw new ProvisioningException($"Repository {_gh.Owner}/{repoName} already exists but has no clinic.config.json, so it is not a copy of the current {template} template. Delete or rename it, or pick another clinic slug, and run again.");
+            }
+
+            await EnsureSuccessAsync(existing, ct);
+        }
+        else
+        {
+            await WaitForConfigAsync(repoName, ct);
+        }
+
         var message = reused ? $"Repository {_gh.Owner}/{repoName} already existed; reusing it." : $"Created private repository {_gh.Owner}/{repoName} from {templateOwner}/{template}.";
         return new RepoOutcome($"{_gh.Owner}/{repoName}", htmlUrl, reused, message);
     }

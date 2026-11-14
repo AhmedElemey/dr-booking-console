@@ -14,7 +14,7 @@ public sealed class DryRunProvisioner(IOptions<GitHubOptions> options) : IGitHub
 
     private string Owner => string.IsNullOrWhiteSpace(_gh.Owner) ? "<owner>" : _gh.Owner;
 
-    public Task<StepOutcome> ValidateAsync(CancellationToken ct) =>
+    public Task<StepOutcome> ValidateAsync(IReadOnlyCollection<RepoKind> kinds, CancellationToken ct) =>
         Task.FromResult(new StepOutcome("Dry run: nothing will be created on GitHub."));
 
     public Task<RepoOutcome> EnsureRepoAsync(RepoKind kind, string repoName, CancellationToken ct)

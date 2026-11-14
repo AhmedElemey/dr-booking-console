@@ -23,6 +23,15 @@ public sealed class FakeGitHub : HttpMessageHandler
     // Number of contents lookups that answer 404 right after a repo is generated (templates copy asynchronously).
     public int NotReadyPolls { get; set; }
 
+    // Template repositories (looked up by name under any owner): default branch and whether clinic.config.json is on it.
+    public Dictionary<string, (string DefaultBranch, bool HasConfig)> Templates { get; } = new()
+    {
+        ["dr-booking-backend"] = ("main", true),
+        ["dr-booking-dashboard"] = ("main", true),
+        ["dr-booking-mobile"] = ("main", true),
+        ["dr-booking-website"] = ("main", true),
+    };
+
     private readonly Dictionary<string, int> _polls = [];
 
     public string? AuthorizationSeen { get; private set; }
@@ -55,6 +64,16 @@ public sealed class FakeGitHub : HttpMessageHandler
                 Repos[name] = new() { ["clinic.config.json"] = ("sha-template", "{}\n") };
                 _polls[name] = 0;
                 return Json(HttpStatusCode.Created, new { full_name = "acme/" + name, html_url = "https://github.com/acme/" + name });
+            }
+
+            if (parts is ["repos", _, var template, ..] && Templates.TryGetValue(template, out var tpl) && request.Method == HttpMethod.Get)
+            {
+                return parts switch
+                {
+                    [_, _, _] => Json(HttpStatusCode.OK, new { default_branch = tpl.DefaultBranch, html_url = "https://github.com/templates/" + template }),
+                    [_, _, _, "contents", "clinic.config.json"] when tpl.HasConfig => Json(HttpStatusCode.OK, new { sha = "sha-template", content = Convert.ToBase64String("{}\n"u8.ToArray()), encoding = "base64" }),
+                    _ => Json(HttpStatusCode.NotFound, new { message = "Not Found" }),
+                };
             }
 
             if (parts is ["repos", _, var repo, ..] && Repos.TryGetValue(repo, out var files))
