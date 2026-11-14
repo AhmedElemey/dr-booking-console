@@ -1,0 +1,11 @@
+/dist
+/tmp
+/out-tsc
+/node_modules
+npm-debug.log
+.idea/
+.vscode/*
+/.angular/cache
+/coverage
+__screenshots__/
+.DS_Store

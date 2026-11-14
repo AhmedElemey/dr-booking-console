@@ -1,0 +1,249 @@
+{
+  "common": {
+    "close": "Close",
+    "cancel": "Cancel",
+    "next": "Next",
+    "back": "Back",
+    "save": "Save changes"
+  },
+  "shell": {
+    "console": "Super admin console",
+    "navigation": "Main navigation",
+    "clinics": "Clinics",
+    "admins": "Super admins",
+    "logout": "Sign out",
+    "dryRunMode": "Dry-run mode",
+    "dryRunModeHint": "The server is in DryRun mode: provisioning never touches GitHub."
+  },
+  "login": {
+    "subtitle": "Sign in to the {{platform}} super admin console",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign in"
+  },
+  "status": {
+    "Draft": "Draft",
+    "Provisioning": "Provisioning",
+    "Active": "Active",
+    "Failed": "Failed",
+    "Suspended": "Suspended",
+    "Queued": "Queued",
+    "Running": "Running",
+    "Succeeded": "Succeeded",
+    "Pending": "Pending",
+    "Skipped": "Skipped"
+  },
+  "repoKind": {
+    "Backend": "Backend",
+    "Dashboard": "Dashboard",
+    "Mobile": "Mobile app",
+    "Website": "Website"
+  },
+  "groups": {
+    "Channels": "Channels",
+    "Booking": "Booking",
+    "Notifications": "Notifications",
+    "Language": "Language",
+    "Organisation": "Organisation",
+    "Payments": "Payments",
+    "Records": "Records",
+    "Growth": "Growth",
+    "Insight": "Insight"
+  },
+  "clinics": {
+    "title": "Clinics",
+    "subtitle": "Every clinic on {{platform}}: its brand, features and repositories.",
+    "new": "New clinic",
+    "search": "Search by name or slug",
+    "status": "Status",
+    "allStatuses": "All statuses",
+    "empty": "No clinics match. Create the first one with “New clinic”.",
+    "features": "Features on",
+    "repos": "Repositories",
+    "created": "Created"
+  },
+  "wizard": {
+    "title": "New clinic",
+    "subtitle": "Identity, brand and features. Nothing is created until the last step.",
+    "steps": {
+      "identity": "Identity",
+      "brand": "Brand",
+      "features": "Features",
+      "review": "Review"
+    },
+    "slugTaken": "This slug is already used by another clinic. Go back and choose a different one.",
+    "invalid": "Some details are not valid. Go back and check the highlighted fields."
+  },
+  "identity": {
+    "nameEn": "Name (English)",
+    "nameAr": "Name (Arabic)",
+    "slug": "Slug",
+    "slugHint": "Used in repository names. Filled from the English name.",
+    "supportPhone": "Support phone",
+    "taglineEn": "Tagline (English)",
+    "taglineAr": "Tagline (Arabic)",
+    "domain": "Website domain",
+    "domainHint": "Optional, without https://",
+    "androidId": "Android application id",
+    "iosId": "iOS bundle id"
+  },
+  "validation": {
+    "required": "This field is required.",
+    "slug": "Lowercase letters, digits and single hyphens, up to 40 characters.",
+    "phone": "Enter a phone number like +201000000000.",
+    "domain": "Enter a domain like smilecare.example.",
+    "appId": "Use a reverse-domain id like com.smilecare.app.",
+    "color": "Use hex colours like #0F766E."
+  },
+  "brand": {
+    "primary": "Primary colour",
+    "accent": "Accent colour",
+    "logo": "Logo",
+    "logoHint": "Optional SVG, up to 100 KB. Without one the template's placeholder logo stays.",
+    "upload": "Upload SVG",
+    "logoSet": "Logo added",
+    "removeLogo": "Remove logo",
+    "logoTooBig": "The logo must be smaller than 100 KB.",
+    "logoInvalid": "Upload a plain SVG file without scripts.",
+    "preview": "Live preview",
+    "saved": "Brand and identity saved.",
+    "syncHint": "This clinic is live. After saving, use “Sync config” to commit the new brand to its repositories."
+  },
+  "features": {
+    "comingSoon": "Coming soon",
+    "createsRepo": "Creates the {{kind}} repository",
+    "pullNote": "Changes are saved immediately and reach the clinic's backend on its next pull (a few minutes).",
+    "savedOn": "{{name}} turned on.",
+    "savedOff": "{{name}} turned off."
+  },
+  "review": {
+    "config": "clinic.config.json",
+    "configHint": "Exactly what provisioning commits to every repository.",
+    "repos": "Repositories to create",
+    "reposHint": "Private repositories created from the templates.",
+    "dryRun": "Dry run (create nothing on GitHub)",
+    "dryRunOn": "Provisioning only records what it would do. You can run it for real later from the clinic page.",
+    "dryRunOff": "Repositories will be created on GitHub now.",
+    "dryRunForced": "This server runs in DryRun mode, so provisioning never creates repositories.",
+    "create": "Create and provision"
+  },
+  "provision": {
+    "intro": "Provisioning creates these private repositories from the templates and commits clinic.config.json. Finished steps are skipped on a re-run.",
+    "run": "Provision now",
+    "runDry": "Start dry run"
+  },
+  "actions": {
+    "provision": "Provision",
+    "retry": "Retry provisioning",
+    "reprovision": "Re-run provisioning",
+    "sync": "Sync config",
+    "rotateKey": "Rotate API key",
+    "suspend": "Suspend",
+    "activate": "Activate",
+    "started": "Job started."
+  },
+  "suspend": {
+    "title": "Suspend this clinic?",
+    "message": "All of its features switch off for its backend on the next pull. You can activate it again at any time.",
+    "done": "Clinic suspended.",
+    "banner": "This clinic is suspended: every feature is off for its backend."
+  },
+  "activate": {
+    "title": "Activate this clinic?",
+    "message": "Its feature switches apply again on the next pull.",
+    "done": "Clinic activated."
+  },
+  "rotate": {
+    "title": "Rotate the API key?",
+    "message": "The current key stops working immediately. The new key is shown once.",
+    "confirm": "Rotate key"
+  },
+  "key": {
+    "title": "Clinic API key",
+    "warning": "Copy it now. It is shown only once and cannot be recovered.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "usage": "Set these on the clinic backend so it can pull its feature switches from {{platform}}:",
+    "saved": "I have saved the key"
+  },
+  "clinic": {
+    "back": "All clinics",
+    "failedBanner": "The last provisioning run failed. Open the Jobs tab for the reason, then retry; finished steps are skipped."
+  },
+  "tabs": {
+    "features": "Features",
+    "brand": "Brand & identity",
+    "repos": "Repositories",
+    "jobs": "Jobs",
+    "audit": "Audit"
+  },
+  "repos": { "empty": "No repositories yet. They appear after a real provisioning run." },
+  "jobs": {
+    "empty": "No provisioning jobs yet.",
+    "dryRun": "Dry run",
+    "steps": {
+      "validate": "Validate clinic",
+      "repo": "Create repository",
+      "config": "Commit clinic.config.json",
+      "variables": "Set Actions variables",
+      "finalize": "Finish"
+    }
+  },
+  "audit": {
+    "empty": "No activity yet.",
+    "when": "When",
+    "who": "Who",
+    "what": "Action",
+    "details": "Details",
+    "actions": {
+      "clinic.created": "Clinic created",
+      "clinic.updated": "Clinic updated",
+      "clinic.suspended": "Clinic suspended",
+      "clinic.activated": "Clinic activated",
+      "feature.changed": "Feature changed",
+      "provision.requested": "Provisioning requested",
+      "provision.succeeded": "Provisioning succeeded",
+      "provision.failed": "Provisioning failed",
+      "provision.dry-run.succeeded": "Dry run succeeded",
+      "provision.dry-run.failed": "Dry run failed",
+      "config.sync.requested": "Config sync requested",
+      "api-key.rotated": "API key rotated"
+    }
+  },
+  "admins": {
+    "title": "Super admins",
+    "subtitle": "People who can sign in to this console.",
+    "add": "Add super admin",
+    "name": "Name",
+    "passwordHint": "At least 10 characters",
+    "create": "Create",
+    "status": "Status",
+    "you": "You",
+    "active": "Active",
+    "inactive": "Deactivated",
+    "deactivate": "Deactivate",
+    "activate": "Reactivate",
+    "deactivateTitle": "Deactivate this admin?",
+    "deactivateMessage": "{{email}} is signed out immediately and can no longer sign in.",
+    "created": "Super admin created."
+  },
+  "errors": {
+    "VALIDATION_FAILED": "Some fields are not valid.",
+    "UNAUTHORIZED": "Your session has expired. Sign in again.",
+    "INVALID_CREDENTIALS": "The email or password is incorrect.",
+    "FORBIDDEN": "You are not allowed to do that.",
+    "NOT_FOUND": "That item was not found.",
+    "CLINIC_NOT_FOUND": "That clinic was not found.",
+    "JOB_NOT_FOUND": "That job was not found.",
+    "FEATURE_NOT_FOUND": "That feature does not exist.",
+    "FEATURE_NOT_AVAILABLE": "This feature is coming soon and cannot be turned on yet.",
+    "SLUG_TAKEN": "Another clinic already uses this slug.",
+    "EMAIL_TAKEN": "A super admin with this email already exists.",
+    "LAST_ADMIN": "You cannot deactivate yourself or the last active super admin.",
+    "JOB_IN_PROGRESS": "A provisioning job is already running for this clinic.",
+    "CLINIC_NOT_ACTIVE": "The clinic must be active (provisioned and not suspended) for this.",
+    "INTERNAL_ERROR": "Something went wrong on the server. Try again.",
+    "NETWORK": "The server cannot be reached.",
+    "UNKNOWN": "Something went wrong."
+  }
+}
