@@ -678,6 +678,19 @@ code {
     color: var(--c-muted);
     font-size: 12.5px;
   }
+  small.setup-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+    color: var(--c-brand);
+    font-size: 12px;
+    mat-icon {
+      flex: none;
+      font-size: 14px;
+      inline-size: 14px;
+      block-size: 14px;
+    }
+  }
 }
 .badge-soon,
 .badge-repo {

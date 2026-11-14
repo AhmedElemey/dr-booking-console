@@ -28,9 +28,38 @@ public sealed class ClinicApiTests : IClassFixture<PostgresFixture>, IAsyncLifet
     public async Task Catalog_lists_available_and_coming_soon_features()
     {
         var catalog = await (await _client.GetAsync("/api/v1/feature-catalog")).JsonAsync();
-        Assert.Equal(21, catalog.GetArrayLength());
+        // 21 real features plus the synthetic unavailable entry registered by SyntheticCatalog.
+        Assert.Equal(22, catalog.GetArrayLength());
         var available = catalog.EnumerateArray().Where(f => f.GetProperty("available").GetBoolean()).Select(f => f.GetProperty("key").GetString()).ToArray();
-        Assert.Equal(["mobileApp", "website", "guestBrowsing", "patientSelfService", "pushReminders", "smsNotifications", "englishLanguage", "multiBranch"], available);
+        Assert.Equal(
+            ["mobileApp",
+                "website",
+                "guestBrowsing",
+                "patientSelfService",
+                "pushReminders",
+                "smsNotifications",
+                "englishLanguage",
+                "multiBranch",
+                "onlinePayments",
+                "whatsappReminders",
+                "waitingList",
+                "holidayCalendar",
+                "workingHoursTemplates",
+                "patientRecords",
+                "reviews",
+                "reports",
+                "promotions",
+                "recallCampaigns",
+                "videoConsultation",
+                "familyAccounts",
+                "insurance"],
+            available);
+        Assert.Equal([SyntheticCatalog.UnavailableKey], catalog.EnumerateArray().Where(f => !f.GetProperty("available").GetBoolean()).Select(f => f.GetProperty("key").GetString()).ToArray());
+        string[] phase2 = ["onlinePayments", "whatsappReminders", "waitingList", "holidayCalendar", "workingHoursTemplates", "patientRecords", "reviews", "reports", "promotions", "recallCampaigns", "videoConsultation", "familyAccounts", "insurance"];
+        Assert.All(catalog.EnumerateArray().Where(f => phase2.Contains(f.GetProperty("key").GetString())), f => Assert.False(f.GetProperty("defaultEnabled").GetBoolean()));
+        var withNotes = catalog.EnumerateArray().Where(f => f.GetProperty("setupNoteEn").ValueKind == JsonValueKind.String).Select(f => f.GetProperty("key").GetString()).Order().ToArray();
+        Assert.Equal(["onlinePayments", "videoConsultation", "whatsappReminders"], withNotes);
+        Assert.All(catalog.EnumerateArray().Where(f => f.GetProperty("setupNoteEn").ValueKind == JsonValueKind.String), f => Assert.Equal(JsonValueKind.String, f.GetProperty("setupNoteAr").ValueKind));
         var mobile = catalog.EnumerateArray().First(f => f.GetProperty("key").GetString() == "mobileApp");
         Assert.Equal("Mobile", mobile.GetProperty("createsRepo").GetString());
         Assert.False(catalog.EnumerateArray().First(f => f.GetProperty("key").GetString() == "smsNotifications").GetProperty("defaultEnabled").GetBoolean());
@@ -102,21 +131,21 @@ public sealed class ClinicApiTests : IClassFixture<PostgresFixture>, IAsyncLifet
     [Fact]
     public async Task Coming_soon_features_cannot_be_enabled_at_creation_or_later()
     {
-        var create = await _client.PostJsonAsync("/api/v1/clinics", Samples.Clinic("soon-one", new { onlinePayments = true }));
+        var create = await _client.PostJsonAsync("/api/v1/clinics", Samples.Clinic("soon-one", new { futureFeature = true }));
         Assert.Equal(HttpStatusCode.Conflict, create.StatusCode);
         var body = await create.JsonAsync();
         Assert.Equal("FEATURE_NOT_AVAILABLE", body.GetProperty("code").GetString());
-        Assert.Equal("onlinePayments", body.GetProperty("feature").GetString());
+        Assert.Equal("futureFeature", body.GetProperty("feature").GetString());
 
         var unknown = await _client.PostJsonAsync("/api/v1/clinics", Samples.Clinic("soon-two", new { teleportation = true }));
         Assert.Equal(HttpStatusCode.BadRequest, unknown.StatusCode);
 
         var clinic = await CreateAsync("soon-three");
         var id = clinic.GetProperty("id").GetString();
-        var enable = await _client.PutAsJsonAsync($"/api/v1/clinics/{id}/features/reviews", new { enabled = true });
+        var enable = await _client.PutAsJsonAsync($"/api/v1/clinics/{id}/features/futureFeature", new { enabled = true });
         Assert.Equal(HttpStatusCode.Conflict, enable.StatusCode);
         Assert.Equal("FEATURE_NOT_AVAILABLE", await enable.CodeAsync());
-        Assert.Equal(HttpStatusCode.OK, (await _client.PutAsJsonAsync($"/api/v1/clinics/{id}/features/reviews", new { enabled = false })).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await _client.PutAsJsonAsync($"/api/v1/clinics/{id}/features/futureFeature", new { enabled = false })).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await _client.PutAsJsonAsync($"/api/v1/clinics/{id}/features/nope", new { enabled = true })).StatusCode);
     }
 
@@ -138,6 +167,34 @@ public sealed class ClinicApiTests : IClassFixture<PostgresFixture>, IAsyncLifet
         var key = (await (await _client.PostJsonAsync($"/api/v1/clinics/{id}/api-key/rotate")).JsonAsync()).GetProperty("apiKey").GetString();
         var runtime = await PullAsync(id!, key);
         Assert.False(runtime.GetProperty("features").GetProperty("guestBrowsing").GetBoolean());
+    }
+
+    [Fact]
+    public async Task Phase_two_features_default_off_toggle_audit_and_reach_the_runtime_pull()
+    {
+        string[] phase2 = ["onlinePayments", "whatsappReminders", "waitingList", "holidayCalendar", "workingHoursTemplates", "patientRecords", "reviews", "reports", "promotions", "recallCampaigns", "videoConsultation", "familyAccounts", "insurance"];
+        var clinic = await CreateAsync("phase-two", new { reviews = true });
+        var id = clinic.GetProperty("id").GetString()!;
+        var detail = await (await _client.GetAsync($"/api/v1/clinics/{id}")).JsonAsync();
+        var states = detail.GetProperty("features").EnumerateArray().ToDictionary(f => f.GetProperty("key").GetString()!, f => f.GetProperty("enabled").GetBoolean());
+        Assert.All(phase2.Where(k => k != "reviews"), k => Assert.False(states[k]));
+        Assert.True(states["reviews"]);
+
+        foreach (var key in phase2.Where(k => k != "reviews"))
+        {
+            var on = await _client.PutAsJsonAsync($"/api/v1/clinics/{id}/features/{key}", new { enabled = true });
+            Assert.Equal(HttpStatusCode.OK, on.StatusCode);
+            Assert.True((await on.JsonAsync()).GetProperty("enabled").GetBoolean());
+        }
+
+        var audit = await (await _client.GetAsync($"/api/v1/audit?clinicId={id}&pageSize=100")).JsonAsync();
+        var audited = audit.GetProperty("items").EnumerateArray().Where(a => a.GetProperty("action").GetString() == "feature.changed").Select(a => a.GetProperty("details").GetProperty("key").GetString()).ToHashSet();
+        Assert.All(phase2.Where(k => k != "reviews"), k => Assert.Contains(k, audited));
+
+        var key2 = (await (await _client.PostJsonAsync($"/api/v1/clinics/{id}/api-key/rotate")).JsonAsync()).GetProperty("apiKey").GetString();
+        var features = (await PullAsync(id, key2)).GetProperty("features");
+        Assert.All(phase2, k => Assert.True(features.GetProperty(k).GetBoolean()));
+        Assert.False(features.TryGetProperty(SyntheticCatalog.UnavailableKey, out _));
     }
 
     [Fact]
@@ -203,7 +260,7 @@ public sealed class ClinicApiTests : IClassFixture<PostgresFixture>, IAsyncLifet
         Assert.Equal("https://console.test", config.GetProperty("console").GetProperty("url").GetString());
         Assert.Equal(id, config.GetProperty("console").GetProperty("clinicId").GetString());
         var features = config.GetProperty("features");
-        Assert.Equal(8, features.EnumerateObject().Count());
+        Assert.Equal(21, features.EnumerateObject().Count());
         Assert.False(features.GetProperty("website").GetBoolean());
         Assert.False(features.GetProperty("smsNotifications").GetBoolean());
     }
@@ -312,7 +369,7 @@ public sealed class ClinicApiTests : IClassFixture<PostgresFixture>, IAsyncLifet
         await _client.PostJsonAsync($"/api/v1/clinics/{id}/suspend");
 
         var features = (await PullAsync(id, key)).GetProperty("features");
-        Assert.Equal(8, features.EnumerateObject().Count());
+        Assert.Equal(21, features.EnumerateObject().Count());
         Assert.All(features.EnumerateObject(), p => Assert.False(p.Value.GetBoolean()));
 
         await _client.PostJsonAsync($"/api/v1/clinics/{id}/activate");

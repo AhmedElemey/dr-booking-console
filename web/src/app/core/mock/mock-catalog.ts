@@ -10,6 +10,7 @@ const f = (
   available: boolean,
   defaultEnabled = available,
   createsRepo: FeatureDefinition['createsRepo'] = null,
+  setupNote: { ar: string; en: string } | null = null,
 ): FeatureDefinition => ({
   key,
   nameAr,
@@ -20,6 +21,8 @@ const f = (
   available,
   defaultEnabled,
   createsRepo,
+  setupNoteAr: setupNote?.ar ?? null,
+  setupNoteEn: setupNote?.en ?? null,
 });
 
 /** Mirror of the API's static feature catalog, for the demo build. */
@@ -108,7 +111,13 @@ export const MOCK_CATALOG: FeatureDefinition[] = [
     'Collect consultation fees online.',
     'دفع رسوم الكشف عبر الإنترنت.',
     'Payments',
+    true,
     false,
+    null,
+    {
+      ar: 'يتطلب إعداد مزود الدفع في الخادم: Payments:Provider=Paymob مع مفاتيح Paymob. بدونها تعمل صفحة دفع تجريبية.',
+      en: 'Needs setup in the clinic backend: Payments:Provider=Paymob plus the Paymob keys. Without them a mock checkout is used.',
+    },
   ),
   f(
     'whatsappReminders',
@@ -117,7 +126,13 @@ export const MOCK_CATALOG: FeatureDefinition[] = [
     'Send reminders over WhatsApp.',
     'إرسال التذكيرات عبر واتساب.',
     'Notifications',
+    true,
     false,
+    null,
+    {
+      ar: 'يتطلب إعدادا في الخادم: WhatsApp:Provider=Meta مع مفاتيح واتساب. بدونها تُسجَّل الرسائل فقط دون إرسال.',
+      en: 'Needs setup in the clinic backend: WhatsApp:Provider=Meta plus the WhatsApp keys. Without them messages are only logged, not sent.',
+    },
   ),
   f(
     'waitingList',
@@ -126,6 +141,7 @@ export const MOCK_CATALOG: FeatureDefinition[] = [
     'Let patients join a waiting list for full slots.',
     'تسجيل المرضى في قائمة انتظار للمواعيد الممتلئة.',
     'Booking',
+    true,
     false,
   ),
   f(
@@ -135,6 +151,7 @@ export const MOCK_CATALOG: FeatureDefinition[] = [
     'Close the clinic automatically on public holidays.',
     'إغلاق العيادة في الإجازات الرسمية تلقائيا.',
     'Organisation',
+    true,
     false,
   ),
   f(
@@ -144,6 +161,7 @@ export const MOCK_CATALOG: FeatureDefinition[] = [
     'Reusable working-hours templates for doctors.',
     'قوالب جاهزة لجداول عمل الأطباء.',
     'Organisation',
+    true,
     false,
   ),
   f(
@@ -153,6 +171,7 @@ export const MOCK_CATALOG: FeatureDefinition[] = [
     'A medical record for every patient.',
     'سجل طبي لكل مريض.',
     'Records',
+    true,
     false,
   ),
   f(
@@ -162,6 +181,7 @@ export const MOCK_CATALOG: FeatureDefinition[] = [
     'Patient ratings and reviews for doctors.',
     'تقييمات وآراء المرضى عن الأطباء.',
     'Growth',
+    true,
     false,
   ),
   f(
@@ -171,6 +191,7 @@ export const MOCK_CATALOG: FeatureDefinition[] = [
     'Booking and revenue reports.',
     'تقارير الحجوزات والإيرادات.',
     'Insight',
+    true,
     false,
   ),
   f(
@@ -180,6 +201,7 @@ export const MOCK_CATALOG: FeatureDefinition[] = [
     'Offers and discount coupons.',
     'عروض وكوبونات خصم.',
     'Growth',
+    true,
     false,
   ),
   f(
@@ -189,6 +211,7 @@ export const MOCK_CATALOG: FeatureDefinition[] = [
     'Remind patients about routine visits.',
     'تذكير المرضى بالزيارات الدورية.',
     'Growth',
+    true,
     false,
   ),
   f(
@@ -198,7 +221,13 @@ export const MOCK_CATALOG: FeatureDefinition[] = [
     'Remote video consultations.',
     'استشارات طبية عن بعد.',
     'Channels',
+    true,
     false,
+    null,
+    {
+      ar: 'يعمل مباشرة عبر Jitsi دون مفاتيح.',
+      en: 'Works out of the box with Jitsi; no keys needed.',
+    },
   ),
   f(
     'familyAccounts',
@@ -207,6 +236,7 @@ export const MOCK_CATALOG: FeatureDefinition[] = [
     'Book for family members from one account.',
     'حجز مواعيد لأفراد العائلة من حساب واحد.',
     'Booking',
+    true,
     false,
   ),
   f(
@@ -216,6 +246,7 @@ export const MOCK_CATALOG: FeatureDefinition[] = [
     'Accept insurance providers.',
     'قبول شركات التأمين الطبي.',
     'Payments',
+    true,
     false,
   ),
 ];

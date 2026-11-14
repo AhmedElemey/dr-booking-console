@@ -48,6 +48,9 @@ const GROUP_ORDER = [
                   >
                 }
                 <small>{{ description(f) }}</small>
+                @if (setupNote(f); as note) {
+                  <small class="setup-note"><mat-icon>vpn_key</mat-icon>{{ note }}</small>
+                }
               </div>
               <mat-slide-toggle
                 [checked]="enabled(f.key)"
@@ -93,6 +96,10 @@ export class FeaturesTab {
 
   protected description(f: FeatureDefinition): string {
     return localized(this.languages.language(), f.descriptionAr, f.descriptionEn);
+  }
+
+  protected setupNote(f: FeatureDefinition): string | null {
+    return localized(this.languages.language(), f.setupNoteAr ?? '', f.setupNoteEn ?? '') || null;
   }
 
   protected enabled(key: string): boolean {

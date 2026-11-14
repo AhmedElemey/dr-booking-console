@@ -49,6 +49,9 @@ export interface FeatureDefinition {
   available: boolean;
   defaultEnabled: boolean;
   createsRepo: RepoKind | null;
+  /** Short provider-setup hint for the clinic backend, when the feature needs keys (or says none are needed). */
+  setupNoteAr?: string | null;
+  setupNoteEn?: string | null;
 }
 
 export interface FeatureState {

@@ -191,6 +191,10 @@ export class ClinicWizard {
     return localized(this.languages.language(), f.nameAr, f.nameEn);
   }
 
+  protected setupNote(f: FeatureDefinition): string | null {
+    return localized(this.languages.language(), f.setupNoteAr ?? '', f.setupNoteEn ?? '') || null;
+  }
+
   protected featureDescription(f: FeatureDefinition): string {
     return localized(this.languages.language(), f.descriptionAr, f.descriptionEn);
   }

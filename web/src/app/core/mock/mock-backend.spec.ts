@@ -6,6 +6,7 @@ import { apiUrl } from '../config/api-url';
 import { ConsoleApi } from '../api/console.api';
 import { ClinicDraft } from '../api/models';
 import { mockBackendInterceptor } from './mock-backend';
+import { MOCK_CATALOG } from './mock-catalog';
 
 const draft = (slug: string): ClinicDraft => ({
   slug,
@@ -64,14 +65,31 @@ describe('mock backend', () => {
     });
   });
 
-  it('refuses to enable a coming-soon feature', async () => {
-    const [nile] = (await firstValueFrom(api.clinics('nile', '', 1))).items;
-    await expect(firstValueFrom(api.setFeature(nile.id, 'reviews', true))).rejects.toMatchObject({
-      status: 409,
-      error: { code: 'FEATURE_NOT_AVAILABLE' },
-    });
-    const state = await firstValueFrom(api.setFeature(nile.id, 'smsNotifications', false));
-    expect(state.enabled).toBe(false);
+  it('refuses to enable an unavailable feature but toggles the phase 2 ones', async () => {
+    // Every real feature is available now; a synthetic unavailable entry keeps the 409 path covered.
+    const synthetic = {
+      ...MOCK_CATALOG[0],
+      key: 'futureFeature',
+      available: false,
+      defaultEnabled: false,
+      createsRepo: null,
+    };
+    MOCK_CATALOG.push(synthetic);
+    try {
+      const [nile] = (await firstValueFrom(api.clinics('nile', '', 1))).items;
+      await expect(
+        firstValueFrom(api.setFeature(nile.id, 'futureFeature', true)),
+      ).rejects.toMatchObject({
+        status: 409,
+        error: { code: 'FEATURE_NOT_AVAILABLE' },
+      });
+      const on = await firstValueFrom(api.setFeature(nile.id, 'reviews', true));
+      expect(on.enabled).toBe(true);
+      const state = await firstValueFrom(api.setFeature(nile.id, 'smsNotifications', false));
+      expect(state.enabled).toBe(false);
+    } finally {
+      MOCK_CATALOG.splice(MOCK_CATALOG.indexOf(synthetic), 1);
+    }
   });
 
   it('runs a dry-run job step by step', async () => {

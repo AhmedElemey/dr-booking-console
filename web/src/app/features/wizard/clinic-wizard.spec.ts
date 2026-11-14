@@ -1,5 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 
+import { FeatureDefinition } from '../../core/api/models';
+import { MOCK_CATALOG } from '../../core/mock/mock-catalog';
 import { provideMockApi, provideTestTranslations } from '../../../testing/test-providers';
 import { ClinicWizard, defaultAppId, slugify } from './clinic-wizard';
 
@@ -18,7 +20,23 @@ describe('wizard helpers', () => {
   });
 });
 
+const UNAVAILABLE: FeatureDefinition = {
+  key: 'futureFeature',
+  nameAr: 'ميزة قادمة',
+  nameEn: 'Future feature',
+  descriptionAr: 'وصف',
+  descriptionEn: 'Description',
+  group: 'Growth',
+  available: false,
+  defaultEnabled: false,
+  createsRepo: null,
+};
+
 describe('ClinicWizard', () => {
+  // Every real feature is available now; a synthetic unavailable entry keeps the coming-soon path covered.
+  beforeEach(() => MOCK_CATALOG.push(UNAVAILABLE));
+  afterEach(() => MOCK_CATALOG.splice(MOCK_CATALOG.indexOf(UNAVAILABLE), 1));
+
   function setup() {
     TestBed.configureTestingModule({
       providers: [...provideMockApi(), ...provideTestTranslations('en')],
@@ -42,20 +60,49 @@ describe('ClinicWizard', () => {
     expect(form.controls.slug.value).toBe('smile-care');
   });
 
-  it('lists the catalog with coming-soon features disabled and repo-creating ones marked', async () => {
+  it('lists the catalog with unavailable features disabled and repo-creating ones marked', async () => {
     const fixture = setup();
     await fixture.whenStable();
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.querySelectorAll('.feature-row').length).toBe(21);
-    expect(el.querySelectorAll('.feature-row.soon').length).toBe(13);
+    expect(el.querySelectorAll('.feature-row').length).toBe(22);
+    expect(el.querySelectorAll('.feature-row.soon').length).toBe(1);
     expect(el.querySelectorAll('.badge-repo').length).toBe(2);
-    expect(el.querySelectorAll('.badge-soon').length).toBe(13);
+    expect(el.querySelectorAll('.badge-soon').length).toBe(1);
     const draft = (
       fixture.componentInstance as unknown as { draft(): { features: Record<string, boolean> } }
     ).draft();
     expect(draft.features['smsNotifications']).toBe(false);
     expect(draft.features['mobileApp']).toBe(true);
     expect(draft.features['onlinePayments']).toBe(false);
+    expect(draft.features['futureFeature']).toBe(false);
+    const phase2 = [
+      'onlinePayments',
+      'whatsappReminders',
+      'waitingList',
+      'holidayCalendar',
+      'workingHoursTemplates',
+      'patientRecords',
+      'reviews',
+      'reports',
+      'promotions',
+      'recallCampaigns',
+      'videoConsultation',
+      'familyAccounts',
+      'insurance',
+    ];
+    for (const k of phase2) expect(draft.features[k], k).toBe(false);
+  });
+
+  it('shows the setup hint only for features that need provider keys', async () => {
+    const fixture = setup();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const notes = Array.from(el.querySelectorAll('.setup-note')).map((n) => n.textContent ?? '');
+    expect(notes.length).toBe(3);
+    expect(notes.some((n) => n.includes('Payments:Provider=Paymob'))).toBe(true);
+    expect(notes.some((n) => n.includes('WhatsApp:Provider=Meta'))).toBe(true);
+    expect(notes.some((n) => n.includes('Jitsi'))).toBe(true);
   });
 });

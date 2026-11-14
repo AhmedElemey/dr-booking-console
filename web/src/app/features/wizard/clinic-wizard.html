@@ -175,6 +175,9 @@
                   >
                 }
                 <small>{{ featureDescription(f) }}</small>
+                @if (setupNote(f); as note) {
+                  <small class="setup-note"><mat-icon>vpn_key</mat-icon>{{ note }}</small>
+                }
               </div>
               <mat-slide-toggle
                 [checked]="features()[f.key]"
