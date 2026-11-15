@@ -93,6 +93,7 @@
     "phone": "Enter a phone number like +201000000000.",
     "domain": "Enter a domain like smilecare.example.",
     "appId": "Use a reverse-domain id like com.smilecare.app.",
+    "androidAppId": "Use lowercase letters and digits in an id like com.smilecare.app. Underscores are not allowed: the id is also the payment-return link scheme.",
     "color": "Use hex colours like #0F766E."
   },
   "brand": {

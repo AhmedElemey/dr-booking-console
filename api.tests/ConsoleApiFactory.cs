@@ -58,7 +58,7 @@ public static class HttpExtensions
 
 public static class Samples
 {
-    public static object Clinic(string slug = "smile-care", object? features = null) => new
+    public static object Clinic(string slug = "smile-care", object? features = null, string? androidApplicationId = null) => new
     {
         slug,
         nameAr = "سمايل كير",
@@ -69,6 +69,7 @@ public static class Samples
         accentColor = "#F59E0B",
         supportPhone = "+201000000000",
         domain = "smilecare.example",
+        androidApplicationId,
         features,
     };
 }

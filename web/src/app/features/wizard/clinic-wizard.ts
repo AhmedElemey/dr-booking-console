@@ -45,6 +45,12 @@ export function slugify(value: string): string {
     .replace(/-+$/g, '');
 }
 
+/**
+ * The Android id is also the payment-return URL scheme (`<id>://payment-return`) and a URI scheme
+ * cannot contain `_`, so it is lowercase letters and digits only (the API enforces the same).
+ */
+export const ANDROID_APP_ID_PATTERN = /^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+$/;
+
 export function defaultAppId(slug: string): string {
   const compact = slug.replace(/-/g, '');
   return compact ? `com.${/^\d/.test(compact) ? 'c' : ''}${compact}.app` : '';
@@ -91,13 +97,7 @@ export class ClinicWizard {
     taglineAr: ['', Validators.maxLength(200)],
     supportPhone: ['', [Validators.required, Validators.pattern(/^\+?[0-9][0-9 -]{5,19}$/)]],
     domain: ['', Validators.pattern(/^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/)],
-    androidApplicationId: [
-      '',
-      [
-        Validators.required,
-        Validators.pattern(/^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)+$/),
-      ],
-    ],
+    androidApplicationId: ['', [Validators.required, Validators.pattern(ANDROID_APP_ID_PATTERN)]],
     iosBundleId: [
       '',
       [
@@ -189,6 +189,10 @@ export class ClinicWizard {
 
   protected featureName(f: FeatureDefinition): string {
     return localized(this.languages.language(), f.nameAr, f.nameEn);
+  }
+
+  protected setupNote(f: FeatureDefinition): string | null {
+    return localized(this.languages.language(), f.setupNoteAr ?? '', f.setupNoteEn ?? '') || null;
   }
 
   protected featureDescription(f: FeatureDefinition): string {

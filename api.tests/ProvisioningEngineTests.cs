@@ -134,6 +134,16 @@ public sealed class ProvisioningEngineTests(PostgresFixture pg) : IClassFixture<
         Assert.Equal("Brand for Smile Care", System.Text.Json.JsonDocument.Parse(fake.Bodies["PUT repos/acme/smile-a-backend/contents/clinic.config.json#1"]).RootElement.GetProperty("message").GetString());
         Assert.Contains("\"slug\": \"smile-a\"", fake.Repos["smile-a-backend"]["clinic.config.json"].Content);
         Assert.Contains($"\"clinicId\": \"{clinicId}\"", fake.Repos["smile-a-backend"]["clinic.config.json"].Content);
+        foreach (var repo in new[] { "smile-a-backend", "smile-a-dashboard" })
+        {
+            var written = System.Text.Json.JsonDocument.Parse(fake.Repos[repo]["clinic.config.json"].Content).RootElement.GetProperty("features");
+            Assert.Equal(FeatureCatalog.Available.Select(f => f.Key).Order().ToArray(), written.EnumerateObject().Select(p => p.Name).Order().ToArray());
+            Assert.Equal(21, written.EnumerateObject().Count());
+            Assert.False(written.GetProperty("onlinePayments").GetBoolean());
+            Assert.False(written.GetProperty("videoConsultation").GetBoolean());
+            Assert.True(written.GetProperty("guestBrowsing").GetBoolean());
+        }
+
         Assert.Equal("https://console.test", fake.Variables["smile-a-backend"]["CONSOLE_URL"]);
         Assert.Equal(clinicId.ToString(), fake.Variables["smile-a-dashboard"]["CLINIC_ID"]);
 

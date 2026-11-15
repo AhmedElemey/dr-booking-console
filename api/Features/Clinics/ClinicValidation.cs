@@ -24,6 +24,11 @@ public static partial class ClinicValidation
     [GeneratedRegex(@"^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)+$")]
     private static partial Regex AppIdRegex();
 
+    // The Android id doubles as the payment-return URL scheme (<id>://payment-return), and a URI scheme
+    // cannot contain "_" (RFC 3986), so unlike iosBundleId it must be lowercase letters and digits only.
+    [GeneratedRegex(@"^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+$")]
+    private static partial Regex AndroidAppIdRegex();
+
     [GeneratedRegex(@"<script|on[a-z]+\s*=|javascript:|<foreignObject|<iframe", RegexOptions.IgnoreCase)]
     private static partial Regex UnsafeSvgRegex();
 
@@ -56,8 +61,8 @@ public static partial class ClinicValidation
             AccentColor = Color(errors, "accentColor", r.AccentColor),
             SupportPhone = Phone(errors, r.SupportPhone),
             Domain = Domain(errors, r.Domain),
-            AndroidApplicationId = AppId(errors, "androidApplicationId", r.AndroidApplicationId, slug),
-            IosBundleId = AppId(errors, "iosBundleId", r.IosBundleId, slug),
+            AndroidApplicationId = AppId(errors, "androidApplicationId", r.AndroidApplicationId, slug, AndroidAppIdRegex(), AndroidAppIdMessage),
+            IosBundleId = AppId(errors, "iosBundleId", r.IosBundleId, slug, AppIdRegex(), IosAppIdMessage),
             LogoSvg = Logo(errors, r.LogoSvg),
         };
 
@@ -82,8 +87,8 @@ public static partial class ClinicValidation
             AccentColor = p.AccentColor is null ? null : Color(errors, "accentColor", p.AccentColor),
             SupportPhone = p.SupportPhone is null ? null : Phone(errors, p.SupportPhone),
             Domain = p.Domain is null ? null : Domain(errors, p.Domain),
-            AndroidApplicationId = p.AndroidApplicationId is null ? null : AppId(errors, "androidApplicationId", p.AndroidApplicationId, null),
-            IosBundleId = p.IosBundleId is null ? null : AppId(errors, "iosBundleId", p.IosBundleId, null),
+            AndroidApplicationId = p.AndroidApplicationId is null ? null : AppId(errors, "androidApplicationId", p.AndroidApplicationId, null, AndroidAppIdRegex(), AndroidAppIdMessage),
+            IosBundleId = p.IosBundleId is null ? null : AppId(errors, "iosBundleId", p.IosBundleId, null, AppIdRegex(), IosAppIdMessage),
             LogoSvg = p.LogoSvg is null ? null : Logo(errors, p.LogoSvg) ?? string.Empty,
         };
 
@@ -188,7 +193,11 @@ public static partial class ClinicValidation
         return v;
     }
 
-    private static string AppId(Dictionary<string, string[]> errors, string field, string? value, string? slug)
+    private const string IosAppIdMessage = "Use a reverse-domain id like com.smilecare.app.";
+
+    private const string AndroidAppIdMessage = "Use lowercase letters and digits in a reverse-domain id like com.smilecare.app. Underscores are not allowed: the id is also the payment-return URL scheme.";
+
+    private static string AppId(Dictionary<string, string[]> errors, string field, string? value, string? slug, Regex pattern, string message)
     {
         var v = (value ?? string.Empty).Trim();
         if (v.Length == 0 && slug is { Length: > 0 } && IsValidSlug(slug))
@@ -196,9 +205,9 @@ public static partial class ClinicValidation
             return DefaultAppId(slug);
         }
 
-        if (!AppIdRegex().IsMatch(v) || v.Length > 100)
+        if (!pattern.IsMatch(v) || v.Length > 100)
         {
-            errors[field] = ["Use a reverse-domain id like com.smilecare.app."];
+            errors[field] = [message];
         }
 
         return v;
