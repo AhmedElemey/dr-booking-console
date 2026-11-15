@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { FeatureDefinition } from '../../core/api/models';
 import { MOCK_CATALOG } from '../../core/mock/mock-catalog';
 import { provideMockApi, provideTestTranslations } from '../../../testing/test-providers';
-import { ClinicWizard, defaultAppId, slugify } from './clinic-wizard';
+import { ANDROID_APP_ID_PATTERN, ClinicWizard, defaultAppId, slugify } from './clinic-wizard';
 
 describe('wizard helpers', () => {
   it('derives a slug from an English name', () => {
@@ -32,6 +32,27 @@ const UNAVAILABLE: FeatureDefinition = {
   createsRepo: null,
 };
 
+describe('Android application id', () => {
+  it('has no underscore, so it can be a URL scheme', () => {
+    for (const ok of ['com.smilecare.app', 'com.c24hours.app', 'eg.clinic2.patient.app']) {
+      expect(ANDROID_APP_ID_PATTERN.test(ok)).toBe(true);
+    }
+    for (const bad of [
+      'com.my_clinic.app',
+      'com.clinic.app_2',
+      'Com.Clinic.App',
+      'single',
+      '1com.a.b',
+    ]) {
+      expect(ANDROID_APP_ID_PATTERN.test(bad)).toBe(false);
+    }
+  });
+
+  it('is derived from the slug without underscores', () => {
+    expect(defaultAppId('smile-care')).not.toContain('_');
+  });
+});
+
 describe('ClinicWizard', () => {
   // Every real feature is available now; a synthetic unavailable entry keeps the coming-soon path covered.
   beforeEach(() => MOCK_CATALOG.push(UNAVAILABLE));
@@ -58,6 +79,19 @@ describe('ClinicWizard', () => {
     (fixture.componentInstance as unknown as { markSlugEdited(): void }).markSlugEdited();
     form.controls.nameEn.setValue('Smile Care Plus');
     expect(form.controls.slug.value).toBe('smile-care');
+  });
+
+  it('rejects an underscore in the Android id but keeps the iOS id rule', () => {
+    const fixture = setup();
+    const form = (fixture.componentInstance as unknown as { identity: ClinicWizard['identity'] })
+      .identity;
+    form.controls.androidApplicationId.setValue('com.my_clinic.app');
+    expect(form.controls.androidApplicationId.valid).toBe(false);
+    expect(form.controls.androidApplicationId.errors).toHaveProperty('pattern');
+    form.controls.androidApplicationId.setValue('com.myclinic.app');
+    expect(form.controls.androidApplicationId.valid).toBe(true);
+    form.controls.iosBundleId.setValue('com.my_clinic.app');
+    expect(form.controls.iosBundleId.valid).toBe(true);
   });
 
   it('lists the catalog with unavailable features disabled and repo-creating ones marked', async () => {

@@ -221,6 +221,45 @@ public sealed class ClinicApiTests : IClassFixture<PostgresFixture>, IAsyncLifet
         Assert.Equal(8, paged.GetProperty("items")[0].GetProperty("enabledFeatureCount").GetInt32() + 1);
     }
 
+    [Theory]
+    [InlineData("com.my_clinic.app")]
+    [InlineData("com.clinic.app_2")]
+    [InlineData("my_app.clinic")]
+    [InlineData("Com.Clinic.App")]
+    [InlineData("single")]
+    public async Task Create_rejects_an_android_application_id_that_cannot_be_a_url_scheme(string appId)
+    {
+        var response = await _client.PostJsonAsync("/api/v1/clinics", Samples.Clinic("app-id-bad", androidApplicationId: appId));
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var body = await response.JsonAsync();
+        Assert.Equal("VALIDATION_FAILED", body.GetProperty("code").GetString());
+        var errors = body.GetProperty("errors");
+        Assert.True(errors.TryGetProperty("androidApplicationId", out var messages));
+        Assert.Contains("Underscores", messages[0].GetString());
+        Assert.False(errors.TryGetProperty("iosBundleId", out _));
+    }
+
+    [Fact]
+    public async Task Create_accepts_a_plain_android_application_id_and_defaults_it_from_the_slug()
+    {
+        var explicitId = await (await _client.PostJsonAsync("/api/v1/clinics", Samples.Clinic("app-id-ok", androidApplicationId: "eg.clinic2.patient"))).JsonAsync();
+        Assert.Equal("eg.clinic2.patient", explicitId.GetProperty("androidApplicationId").GetString());
+        var defaulted = await CreateAsync("app-id-default");
+        Assert.Equal("com.appiddefault.app", defaulted.GetProperty("androidApplicationId").GetString());
+    }
+
+    [Fact]
+    public async Task Patch_rejects_an_underscore_in_the_android_application_id()
+    {
+        var clinic = await CreateAsync("patch-app-id");
+        var id = clinic.GetProperty("id").GetString();
+        var bad = await _client.PatchAsJsonAsync($"/api/v1/clinics/{id}", new { androidApplicationId = "com.my_clinic.app" });
+        Assert.Equal(HttpStatusCode.BadRequest, bad.StatusCode);
+        Assert.True((await bad.JsonAsync()).GetProperty("errors").TryGetProperty("androidApplicationId", out _));
+        var good = await _client.PatchAsJsonAsync($"/api/v1/clinics/{id}", new { androidApplicationId = "com.myclinic.app" });
+        Assert.Equal(HttpStatusCode.OK, good.StatusCode);
+    }
+
     [Fact]
     public async Task Patch_updates_brand_and_identity_fields_and_validates()
     {
