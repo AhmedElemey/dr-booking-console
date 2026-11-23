@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 
 using Console.Api.Common;
 using Console.Api.Data;
@@ -27,6 +28,8 @@ public static class ServiceRegistration
         var config = builder.Configuration;
         var services = builder.Services;
 
+        services.AddTrustedForwarding(config);
+
         services.Configure<PlatformOptions>(config.GetSection(PlatformOptions.Section));
         services.Configure<JwtOptions>(config.GetSection(JwtOptions.Section));
         services.Configure<SuperAdminSeedOptions>(config.GetSection(SuperAdminSeedOptions.Section));
@@ -38,6 +41,21 @@ public static class ServiceRegistration
         if (jwt.Key.Length < 32)
         {
             throw new InvalidOperationException("Jwt:Key must be set (environment variable Jwt__Key) and at least 32 characters long.");
+        }
+
+        if (!builder.Environment.IsDevelopment())
+        {
+            if (jwt.Key.Contains("development-only", StringComparison.OrdinalIgnoreCase) ||
+                jwt.Key.Contains("change-me", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Jwt:Key must not use a development signing key outside Development.");
+            }
+
+            var password = config["SuperAdmin:Password"];
+            if (password is not null && (password.Length < 12 || password == "ChangeMe-12345"))
+            {
+                throw new InvalidOperationException("SuperAdmin:Password must be private, non-default and at least 12 characters outside Development.");
+            }
         }
 
         services.AddSingleton(TimeProvider.System);
@@ -94,6 +112,31 @@ public static class ServiceRegistration
 
         var origins = (config["Cors:Origins"] ?? "http://localhost:4200").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         services.AddCors(o => o.AddDefaultPolicy(p => p.WithOrigins(origins).AllowAnyHeader().AllowAnyMethod()));
+
+        services.AddRateLimiter(options =>
+        {
+            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            options.OnRejected = async (context, cancellationToken) =>
+            {
+                context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+                context.HttpContext.Response.Headers.RetryAfter = "60";
+                await context.HttpContext.Response.WriteAsJsonAsync(new
+                {
+                    code = "RATE_LIMITED",
+                    status = StatusCodes.Status429TooManyRequests,
+                    title = "Too many sign-in attempts. Try again in a minute.",
+                }, cancellationToken);
+            };
+            options.AddPolicy("console-login", context => RateLimitPartition.GetFixedWindowLimiter(
+                context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 10,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0,
+                    AutoReplenishment = true,
+                }));
+        });
 
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(o =>

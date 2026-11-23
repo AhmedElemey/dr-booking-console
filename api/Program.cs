@@ -11,6 +11,7 @@ builder.AddConsole();
 
 var app = builder.Build();
 
+app.UseForwardedHeaders();
 app.UseExceptionHandler();
 app.UseStatusCodePages(context => Problems.WriteAsync(context.HttpContext, ErrorCodes.FromStatus(context.HttpContext.Response.StatusCode)));
 
@@ -29,10 +30,18 @@ if (app.Configuration.GetValue("Database:AutoMigrate", true))
 }
 
 app.UseCors();
+app.UseDefaultFiles();
+app.UseStaticFiles();
+app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 app.MapGet("/health", () => Results.Ok(new { status = "ok" })).AllowAnonymous();
 app.MapApi();
+// Only non-API browser navigation falls back to the Angular entry point.
+// Unknown API routes must remain 404, never a successful HTML response.
+app.MapFallback("/api/{**path}", () => Results.NotFound()).AllowAnonymous();
+app.MapFallbackToFile("index.html").AllowAnonymous();
 
 app.Run();
 
