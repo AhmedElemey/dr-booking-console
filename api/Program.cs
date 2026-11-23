@@ -12,6 +12,12 @@ builder.AddConsole();
 var app = builder.Build();
 
 app.UseForwardedHeaders();
+// The admin console must never be indexed, including static assets and error responses.
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["X-Robots-Tag"] = "noindex, nofollow, noarchive";
+    await next();
+});
 app.UseExceptionHandler();
 app.UseStatusCodePages(context => Problems.WriteAsync(context.HttpContext, ErrorCodes.FromStatus(context.HttpContext.Response.StatusCode)));
 
@@ -36,6 +42,7 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
+app.MapGet("/robots.txt", () => Results.Text("User-agent: *\nDisallow: /\n", "text/plain")).AllowAnonymous();
 app.MapGet("/health", () => Results.Ok(new { status = "ok" })).AllowAnonymous();
 app.MapApi();
 // Only non-API browser navigation falls back to the Angular entry point.
