@@ -35,7 +35,7 @@ public static class AuthEndpoints
             }
 
             return await auth.LoginAsync(request.Email!, request.Password!, ct);
-        }).AllowAnonymous().WithTags("Auth");
+        }).AllowAnonymous().RequireRateLimiting("console-login").WithTags("Auth");
 
         api.MapGet("me", async (ClaimsPrincipal user, ConsoleDbContext db, CancellationToken ct) =>
         {
