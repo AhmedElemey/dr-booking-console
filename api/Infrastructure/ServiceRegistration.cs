@@ -43,6 +43,21 @@ public static class ServiceRegistration
             throw new InvalidOperationException("Jwt:Key must be set (environment variable Jwt__Key) and at least 32 characters long.");
         }
 
+        if (!builder.Environment.IsDevelopment())
+        {
+            if (jwt.Key.Contains("development-only", StringComparison.OrdinalIgnoreCase) ||
+                jwt.Key.Contains("change-me", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Jwt:Key must not use a development signing key outside Development.");
+            }
+
+            var password = config["SuperAdmin:Password"];
+            if (password is not null && (password.Length < 12 || password == "ChangeMe-12345"))
+            {
+                throw new InvalidOperationException("SuperAdmin:Password must be private, non-default and at least 12 characters outside Development.");
+            }
+        }
+
         services.AddSingleton(TimeProvider.System);
         services.AddDbContext<ConsoleDbContext>(options => options
             .UseNpgsql(config.GetConnectionString("Default") ?? throw new InvalidOperationException("ConnectionStrings:Default is not set."))
