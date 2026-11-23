@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 
 using Console.Api.Common;
 using Console.Api.Data;
@@ -26,6 +27,8 @@ public static class ServiceRegistration
     {
         var config = builder.Configuration;
         var services = builder.Services;
+
+        services.AddTrustedForwarding(config);
 
         services.Configure<PlatformOptions>(config.GetSection(PlatformOptions.Section));
         services.Configure<JwtOptions>(config.GetSection(JwtOptions.Section));
@@ -94,6 +97,31 @@ public static class ServiceRegistration
 
         var origins = (config["Cors:Origins"] ?? "http://localhost:4200").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         services.AddCors(o => o.AddDefaultPolicy(p => p.WithOrigins(origins).AllowAnyHeader().AllowAnyMethod()));
+
+        services.AddRateLimiter(options =>
+        {
+            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            options.OnRejected = async (context, cancellationToken) =>
+            {
+                context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+                context.HttpContext.Response.Headers.RetryAfter = "60";
+                await context.HttpContext.Response.WriteAsJsonAsync(new
+                {
+                    code = "RATE_LIMITED",
+                    status = StatusCodes.Status429TooManyRequests,
+                    title = "Too many sign-in attempts. Try again in a minute.",
+                }, cancellationToken);
+            };
+            options.AddPolicy("console-login", context => RateLimitPartition.GetFixedWindowLimiter(
+                context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 10,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0,
+                    AutoReplenishment = true,
+                }));
+        });
 
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(o =>
