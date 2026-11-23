@@ -50,10 +50,28 @@ public sealed class TrustedForwardingTests(PostgresFixture db) : IClassFixture<P
     [InlineData("ForwardedHeaders_Enabled", "true")]
     [InlineData("ReverseProxy:ForwardLimit", "0")]
     [InlineData("ReverseProxy:ForwardLimit", "6")]
+    [InlineData("ReverseProxy:KnownNetworks:0", "0.0.0.0/0")]
+    [InlineData("ReverseProxy:KnownNetworks:0", "invalid/12")]
+    [InlineData("ReverseProxy:KnownNetworks:0", "10.0.0.0/33")]
     public async Task Unsafe_forwarding_configuration_fails_closed(string key, string value)
     {
         await using var factory = new ConsoleApiFactory(db.ConnectionString, new() { [key] = value });
         Assert.Throws<InvalidOperationException>(() => factory.CreateClient());
+    }
+
+    [Theory]
+    [InlineData("10.24.1.9", "203.0.113.7")]
+    [InlineData("192.0.2.99", "192.0.2.99")]
+    public async Task Explicit_CIDR_trust_accepts_only_senders_in_the_network(string sender, string expected)
+    {
+        await using var factory = new ConsoleApiFactory(db.ConnectionString, new()
+        {
+            ["ReverseProxy:KnownNetworks:0"] = "10.24.0.0/16",
+            ["ReverseProxy:ForwardLimit"] = "1",
+        });
+        using var client = factory.CreateClient();
+        var result = await LoginAsync(factory, sender, "198.51.100.8, 203.0.113.7");
+        Assert.Equal(expected, result.Connection.RemoteIpAddress?.ToString());
     }
 
     private static Task<HttpContext> LoginAsync(ConsoleApiFactory factory, string sender, string forwarded) =>
