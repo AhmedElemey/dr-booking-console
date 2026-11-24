@@ -47,6 +47,19 @@ public sealed class TrustedForwardingTests(PostgresFixture db) : IClassFixture<P
     }
 
     [Theory]
+    [InlineData(null, null, false)]
+    [InlineData("::1", null, true)]
+    [InlineData(null, "10.0.0.0/8", true)]
+    public void Production_warning_applies_only_when_no_proxy_or_network_is_configured(string? proxy, string? network, bool expected)
+    {
+        var values = new Dictionary<string, string?>();
+        if (proxy is not null) values["ReverseProxy:KnownProxies:0"] = proxy;
+        if (network is not null) values["ReverseProxy:KnownNetworks:0"] = network;
+        var config = new Microsoft.Extensions.Configuration.ConfigurationBuilder().AddInMemoryCollection(values).Build();
+        Assert.Equal(expected, Console.Api.Infrastructure.TrustedForwarding.HasTrustConfigured(config));
+    }
+
+    [Theory]
     [InlineData("203.0.113.9, 172.70.108.104, 10.24.205.99")]
     [InlineData("1.2.3.4,203.0.113.9, 172.70.108.104, 10.24.205.99")]
     public async Task Render_chain_resolves_to_the_real_client_and_ignores_a_forged_leftmost_entry(string forwardedFor)
