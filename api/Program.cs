@@ -10,6 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddConsole();
 
 var app = builder.Build();
+app.WarnIfForwardingUntrusted();
 
 app.UseForwardedHeaders();
 // The admin console must never be indexed, including static assets and error responses.
