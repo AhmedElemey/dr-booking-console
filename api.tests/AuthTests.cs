@@ -24,7 +24,7 @@ public sealed class AuthTests : IClassFixture<PostgresFixture>, IAsyncLifetime
         Assert.Equal(HttpStatusCode.OK, (await anon.GetAsync("/health")).StatusCode);
 
         var platform = await (await anon.GetAsync("/api/v1/platform")).JsonAsync();
-        Assert.Equal("Moonlight", platform.GetProperty("name").GetString());
+        Assert.Equal("Dr booking", platform.GetProperty("name").GetString());
         Assert.Equal("DryRun", platform.GetProperty("provisioningMode").GetString());
     }
 
