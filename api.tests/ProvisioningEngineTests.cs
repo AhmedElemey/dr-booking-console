@@ -138,7 +138,7 @@ public sealed class ProvisioningEngineTests(PostgresFixture pg) : IClassFixture<
         {
             var written = System.Text.Json.JsonDocument.Parse(fake.Repos[repo]["clinic.config.json"].Content).RootElement.GetProperty("features");
             Assert.Equal(FeatureCatalog.Available.Select(f => f.Key).Order().ToArray(), written.EnumerateObject().Select(p => p.Name).Order().ToArray());
-            Assert.Equal(21, written.EnumerateObject().Count());
+            Assert.Equal(24, written.EnumerateObject().Count());
             Assert.False(written.GetProperty("onlinePayments").GetBoolean());
             Assert.False(written.GetProperty("videoConsultation").GetBoolean());
             Assert.True(written.GetProperty("guestBrowsing").GetBoolean());
