@@ -113,6 +113,7 @@ describe('ClinicWizard', () => {
     const phase2 = [
       'onlinePayments',
       'whatsappReminders',
+      'whatsappOtp',
       'waitingList',
       'liveQueue',
       'manualReview',
