@@ -28,8 +28,8 @@ public sealed class ClinicApiTests : IClassFixture<PostgresFixture>, IAsyncLifet
     public async Task Catalog_lists_available_and_coming_soon_features()
     {
         var catalog = await (await _client.GetAsync("/api/v1/feature-catalog")).JsonAsync();
-        // 24 real features plus the synthetic unavailable entry registered by SyntheticCatalog.
-        Assert.Equal(25, catalog.GetArrayLength());
+        // 25 real features plus the synthetic unavailable entry registered by SyntheticCatalog.
+        Assert.Equal(26, catalog.GetArrayLength());
         var available = catalog.EnumerateArray().Where(f => f.GetProperty("available").GetBoolean()).Select(f => f.GetProperty("key").GetString()).ToArray();
         Assert.Equal(
             ["mobileApp",
@@ -304,7 +304,7 @@ public sealed class ClinicApiTests : IClassFixture<PostgresFixture>, IAsyncLifet
         Assert.Equal("https://console.test", config.GetProperty("console").GetProperty("url").GetString());
         Assert.Equal(id, config.GetProperty("console").GetProperty("clinicId").GetString());
         var features = config.GetProperty("features");
-        Assert.Equal(24, features.EnumerateObject().Count());
+        Assert.Equal(25, features.EnumerateObject().Count());
         Assert.False(features.GetProperty("website").GetBoolean());
         Assert.False(features.GetProperty("smsNotifications").GetBoolean());
     }
@@ -413,7 +413,7 @@ public sealed class ClinicApiTests : IClassFixture<PostgresFixture>, IAsyncLifet
         await _client.PostJsonAsync($"/api/v1/clinics/{id}/suspend");
 
         var features = (await PullAsync(id, key)).GetProperty("features");
-        Assert.Equal(24, features.EnumerateObject().Count());
+        Assert.Equal(25, features.EnumerateObject().Count());
         Assert.All(features.EnumerateObject(), p => Assert.False(p.Value.GetBoolean()));
 
         await _client.PostJsonAsync($"/api/v1/clinics/{id}/activate");
