@@ -47,6 +47,47 @@ public sealed class TrustedForwardingTests(PostgresFixture db) : IClassFixture<P
     }
 
     [Theory]
+    [InlineData("203.0.113.9, 172.70.108.104, 10.24.205.99")]
+    [InlineData("1.2.3.4,203.0.113.9, 172.70.108.104, 10.24.205.99")]
+    public async Task Render_chain_resolves_to_the_real_client_and_ignores_a_forged_leftmost_entry(string forwardedFor)
+    {
+        // Shape measured on the Render backend: sender ::1, then [client, Cloudflare, 10.x hop].
+        // Cloudflare ranges are from https://www.cloudflare.com/ips-v4 and /ips-v6.
+        var settings = new Dictionary<string, string?>
+        {
+            ["ReverseProxy:ForwardLimit"] = "3",
+            ["ReverseProxy:KnownProxies:0"] = "::1",
+            ["ReverseProxy:KnownNetworks:0"] = "10.0.0.0/8",
+            ["ReverseProxy:KnownNetworks:1"] = "173.245.48.0/20",
+            ["ReverseProxy:KnownNetworks:2"] = "103.21.244.0/22",
+            ["ReverseProxy:KnownNetworks:3"] = "103.22.200.0/22",
+            ["ReverseProxy:KnownNetworks:4"] = "103.31.4.0/22",
+            ["ReverseProxy:KnownNetworks:5"] = "141.101.64.0/18",
+            ["ReverseProxy:KnownNetworks:6"] = "108.162.192.0/18",
+            ["ReverseProxy:KnownNetworks:7"] = "190.93.240.0/20",
+            ["ReverseProxy:KnownNetworks:8"] = "188.114.96.0/20",
+            ["ReverseProxy:KnownNetworks:9"] = "197.234.240.0/22",
+            ["ReverseProxy:KnownNetworks:10"] = "198.41.128.0/17",
+            ["ReverseProxy:KnownNetworks:11"] = "162.158.0.0/15",
+            ["ReverseProxy:KnownNetworks:12"] = "104.16.0.0/13",
+            ["ReverseProxy:KnownNetworks:13"] = "104.24.0.0/14",
+            ["ReverseProxy:KnownNetworks:14"] = "172.64.0.0/13",
+            ["ReverseProxy:KnownNetworks:15"] = "131.0.72.0/22",
+            ["ReverseProxy:KnownNetworks:16"] = "2400:cb00::/32",
+            ["ReverseProxy:KnownNetworks:17"] = "2606:4700::/32",
+            ["ReverseProxy:KnownNetworks:18"] = "2803:f800::/32",
+            ["ReverseProxy:KnownNetworks:19"] = "2405:b500::/32",
+            ["ReverseProxy:KnownNetworks:20"] = "2405:8100::/32",
+            ["ReverseProxy:KnownNetworks:21"] = "2a06:98c0::/29",
+            ["ReverseProxy:KnownNetworks:22"] = "2c0f:f248::/32",
+        };
+        await using var factory = new ConsoleApiFactory(db.ConnectionString, settings);
+        using var client = factory.CreateClient();
+        var result = await LoginAsync(factory, "::1", forwardedFor);
+        Assert.Equal("203.0.113.9", result.Connection.RemoteIpAddress?.ToString());
+    }
+
+    [Theory]
     [InlineData("ForwardedHeaders_Enabled", "true")]
     [InlineData("ReverseProxy:ForwardLimit", "0")]
     [InlineData("ReverseProxy:ForwardLimit", "6")]
