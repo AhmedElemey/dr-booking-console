@@ -33,6 +33,7 @@ public static class FeatureCatalog
         new("whatsappReminders", "تذكيرات واتساب", "WhatsApp reminders", "إرسال التذكيرات عبر واتساب.", "Send reminders over WhatsApp.", "Notifications", true, false, null,
             "يتطلب إعدادا في الخادم: WhatsApp:Provider=Meta مع مفاتيح واتساب. بدونها تُسجَّل الرسائل فقط دون إرسال.",
             "Needs setup in the clinic backend: WhatsApp:Provider=Meta plus the WhatsApp keys. Without them messages are only logged, not sent."),
+        new("whatsappOtp", "رموز الدخول عبر واتساب", "WhatsApp login codes", "إرسال رمز الدخول عبر واتساب بدل SMS، مع الرجوع إلى SMS عند الفشل.", "Send login codes over WhatsApp instead of SMS, falling back to SMS if it fails.", "Notifications", true, false, null),
         new("waitingList", "قائمة الانتظار", "Waiting list", "تسجيل المرضى في قائمة انتظار للمواعيد الممتلئة.", "Let patients join a waiting list for full slots.", "Booking", true, false, null),
         new("liveQueue", "قائمة الانتظار الحية", "Live queue", "متابعة وصول المرضى وترتيبهم في العيادة لحظة بلحظة.", "Track patient arrivals and the in-clinic queue in real time.", "Booking", true, false, null),
         new("manualReview", "تأكيد الحجز يدويا", "Manual booking review", "تبقى الحجوزات بانتظار تأكيد العيادة قبل أن تصبح مؤكدة.", "Bookings wait for the clinic to confirm them before they are final.", "Booking", true, false, null),
