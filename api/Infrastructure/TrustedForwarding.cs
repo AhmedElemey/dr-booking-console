@@ -45,6 +45,20 @@ public static class TrustedForwarding
         });
     }
 
+    // Production only: trust is off unless proxies or networks are configured, and
+    // then rate limits key on the proxy IP instead of the real client.
+    public static void WarnIfForwardingUntrusted(this WebApplication app)
+    {
+        if (app.Environment.IsProduction() && !HasTrustConfigured(app.Configuration))
+        {
+            app.Logger.LogWarning("Forwarded headers are not trusted; rate limits will key on the proxy IP. Set ReverseProxy__KnownProxies / ReverseProxy__KnownNetworks (see DEPLOYMENT.md).");
+        }
+    }
+
+    public static bool HasTrustConfigured(IConfiguration config) =>
+        (config.GetSection("ReverseProxy:KnownProxies").Get<string[]>() ?? []).Length > 0 ||
+        (config.GetSection("ReverseProxy:KnownNetworks").Get<string[]>() ?? []).Length > 0;
+
     private static Microsoft.AspNetCore.HttpOverrides.IPNetwork ParseNetwork(string value)
     {
         var parts = value.Split('/');
