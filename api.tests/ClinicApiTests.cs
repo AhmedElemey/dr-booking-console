@@ -58,8 +58,9 @@ public sealed class ClinicApiTests : IClassFixture<PostgresFixture>, IAsyncLifet
                 "insurance"],
             available);
         Assert.Equal([SyntheticCatalog.UnavailableKey], catalog.EnumerateArray().Where(f => !f.GetProperty("available").GetBoolean()).Select(f => f.GetProperty("key").GetString()).ToArray());
-        string[] phase2 = ["onlinePayments", "whatsappReminders", "waitingList", "liveQueue", "manualReview", "publicPrices", "holidayCalendar", "workingHoursTemplates", "patientRecords", "reviews", "reports", "promotions", "recallCampaigns", "videoConsultation", "familyAccounts", "insurance"];
+        string[] phase2 = ["onlinePayments", "whatsappReminders", "waitingList", "liveQueue", "manualReview", "holidayCalendar", "workingHoursTemplates", "patientRecords", "reviews", "reports", "promotions", "recallCampaigns", "videoConsultation", "familyAccounts", "insurance"];
         Assert.All(catalog.EnumerateArray().Where(f => phase2.Contains(f.GetProperty("key").GetString())), f => Assert.False(f.GetProperty("defaultEnabled").GetBoolean()));
+        Assert.True(catalog.EnumerateArray().First(f => f.GetProperty("key").GetString() == "publicPrices").GetProperty("defaultEnabled").GetBoolean());
         var withNotes = catalog.EnumerateArray().Where(f => f.GetProperty("setupNoteEn").ValueKind == JsonValueKind.String).Select(f => f.GetProperty("key").GetString()).Order().ToArray();
         Assert.Equal(["onlinePayments", "videoConsultation", "whatsappReminders"], withNotes);
         Assert.All(catalog.EnumerateArray().Where(f => f.GetProperty("setupNoteEn").ValueKind == JsonValueKind.String), f => Assert.Equal(JsonValueKind.String, f.GetProperty("setupNoteAr").ValueKind));
@@ -175,7 +176,7 @@ public sealed class ClinicApiTests : IClassFixture<PostgresFixture>, IAsyncLifet
     [Fact]
     public async Task Phase_two_features_default_off_toggle_audit_and_reach_the_runtime_pull()
     {
-        string[] phase2 = ["onlinePayments", "whatsappReminders", "waitingList", "liveQueue", "manualReview", "publicPrices", "holidayCalendar", "workingHoursTemplates", "patientRecords", "reviews", "reports", "promotions", "recallCampaigns", "videoConsultation", "familyAccounts", "insurance"];
+        string[] phase2 = ["onlinePayments", "whatsappReminders", "waitingList", "liveQueue", "manualReview", "holidayCalendar", "workingHoursTemplates", "patientRecords", "reviews", "reports", "promotions", "recallCampaigns", "videoConsultation", "familyAccounts", "insurance"];
         var clinic = await CreateAsync("phase-two", new { reviews = true });
         var id = clinic.GetProperty("id").GetString()!;
         var detail = await (await _client.GetAsync($"/api/v1/clinics/{id}")).JsonAsync();
@@ -221,7 +222,7 @@ public sealed class ClinicApiTests : IClassFixture<PostgresFixture>, IAsyncLifet
         var paged = await (await _client.GetAsync("/api/v1/clinics?search=list-&page=2&pageSize=2")).JsonAsync();
         Assert.Equal(3, paged.GetProperty("total").GetInt32());
         Assert.Equal(1, paged.GetProperty("items").GetArrayLength());
-        Assert.Equal(8, paged.GetProperty("items")[0].GetProperty("enabledFeatureCount").GetInt32() + 1);
+        Assert.Equal(9, paged.GetProperty("items")[0].GetProperty("enabledFeatureCount").GetInt32() + 1);
     }
 
     [Theory]
