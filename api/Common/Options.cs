@@ -5,7 +5,7 @@ public sealed class PlatformOptions
     public const string Section = "Platform";
 
     // The one place the product display name lives; surfaced to the web app through GET /api/v1/platform.
-    public string Name { get; set; } = "Moonlight";
+    public string Name { get; set; } = "Dr booking";
 }
 
 public sealed class JwtOptions
