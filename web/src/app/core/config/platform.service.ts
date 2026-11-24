@@ -11,7 +11,7 @@ export class PlatformService {
   private readonly api = inject(ConsoleApi);
   private readonly document = inject(DOCUMENT);
 
-  readonly name = signal('Moonlight');
+  readonly name = signal('Dr booking');
   readonly provisioningMode = signal<Platform['provisioningMode']>('DryRun');
 
   async load(): Promise<void> {

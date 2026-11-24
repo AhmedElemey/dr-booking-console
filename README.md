@@ -2,7 +2,7 @@
 
 The control plane for a multi-clinic platform. A super admin creates a clinic (identity, brand, features), the console provisions its GitHub repositories from template repos, and each clinic's backend pulls its feature switches from the console at runtime.
 
-The platform display name is one setting, `Platform__Name` (default `Moonlight`), used by the API and the web UI. Change it there only.
+The platform display name is one setting, `Platform__Name` (default `Dr booking`), used by the API and the web UI. Change it there only.
 
 ```
 api/         .NET 8 Web API (Console.Api): auth, clinics, feature catalog, provisioning engine, audit
@@ -39,7 +39,7 @@ An in-memory fake API serves three sample clinics and simulates provisioning job
 | `Jwt__Key` | HMAC signing key for access tokens (at least 32 characters) | required |
 | `Jwt__ExpiresHours` | access token lifetime | `8` |
 | `SuperAdmin__Email`, `SuperAdmin__Password` | first super admin, seeded on startup only when no admin exists | none |
-| `Platform__Name` | platform display name shown everywhere | `Moonlight` |
+| `Platform__Name` | platform display name shown everywhere | `Dr booking` |
 | `Console__PublicUrl` | public origin of this console; written into every clinic's `clinic.config.json` and the `CONSOLE_URL` Actions variable | empty |
 | `Cors__Origins` | comma separated allowed web origins | `http://localhost:4200` |
 | `Database__AutoMigrate` | apply migrations on startup | `true` |

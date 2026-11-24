@@ -400,7 +400,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   let m: RegExpMatchArray | null;
 
   if (method === 'GET' && path === '/platform')
-    return ok({ name: 'Moonlight', provisioningMode: 'GitHub' });
+    return ok({ name: 'Dr booking', provisioningMode: 'GitHub' });
   if (method === 'POST' && path === '/auth/login') {
     if (!body['email'] || !body['password']) return problem(400, 'VALIDATION_FAILED');
     if (body['password'] === 'wrong') return problem(401, 'INVALID_CREDENTIALS');

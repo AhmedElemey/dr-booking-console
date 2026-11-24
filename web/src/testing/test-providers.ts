@@ -22,8 +22,8 @@ export function provideTestTranslations(
     provideTranslateService({ fallbackLang: 'en' }),
     provideEnvironmentInitializer(() => {
       const translate = inject(TranslateService);
-      translate.setTranslation('en', fillPlatform(en, 'Moonlight'));
-      translate.setTranslation('ar', fillPlatform(ar, 'Moonlight'));
+      translate.setTranslation('en', fillPlatform(en, 'Dr booking'));
+      translate.setTranslation('ar', fillPlatform(ar, 'Dr booking'));
       translate.use(lang);
       inject(LanguageService).use(lang);
     }),
