@@ -26,3 +26,37 @@ After deployment, temporarily inspect the resolved client IP with synthetic requ
 Outside Development, JWT keys containing the public development markers are refused. Use a private generated signing key, not a value copied from development settings.
 
 Outside Development, the published default seeded administrator password and configured passwords shorter than 12 characters are refused at startup, even if migration is disabled. An omitted seed password remains allowed for an existing administrator database. Docker is not installed in the current validation environment; a real image build and container startup test remain required before deployment. Set the host PORT to 8080 to match Kestrel.
+
+### Forwarding on Render (same topology as the backend)
+
+The backend's measured Render chain is `[client-supplied entries, real client, Cloudflare address, 10.x hop]` from sender `::1` (see the backend DEPLOYMENT-TEST.md). Nothing is trusted by default in code; set these environment variables on the console service (Cloudflare ranges from https://www.cloudflare.com/ips-v4 and https://www.cloudflare.com/ips-v6):
+
+```
+ReverseProxy__KnownProxies__0=::1
+ReverseProxy__ForwardLimit=3
+ReverseProxy__KnownNetworks__0=10.0.0.0/8
+ReverseProxy__KnownNetworks__1=173.245.48.0/20
+ReverseProxy__KnownNetworks__2=103.21.244.0/22
+ReverseProxy__KnownNetworks__3=103.22.200.0/22
+ReverseProxy__KnownNetworks__4=103.31.4.0/22
+ReverseProxy__KnownNetworks__5=141.101.64.0/18
+ReverseProxy__KnownNetworks__6=108.162.192.0/18
+ReverseProxy__KnownNetworks__7=190.93.240.0/20
+ReverseProxy__KnownNetworks__8=188.114.96.0/20
+ReverseProxy__KnownNetworks__9=197.234.240.0/22
+ReverseProxy__KnownNetworks__10=198.41.128.0/17
+ReverseProxy__KnownNetworks__11=162.158.0.0/15
+ReverseProxy__KnownNetworks__12=104.16.0.0/13
+ReverseProxy__KnownNetworks__13=104.24.0.0/14
+ReverseProxy__KnownNetworks__14=172.64.0.0/13
+ReverseProxy__KnownNetworks__15=131.0.72.0/22
+ReverseProxy__KnownNetworks__16=2400:cb00::/32
+ReverseProxy__KnownNetworks__17=2606:4700::/32
+ReverseProxy__KnownNetworks__18=2803:f800::/32
+ReverseProxy__KnownNetworks__19=2405:b500::/32
+ReverseProxy__KnownNetworks__20=2405:8100::/32
+ReverseProxy__KnownNetworks__21=2a06:98c0::/29
+ReverseProxy__KnownNetworks__22=2c0f:f248::/32
+```
+
+`ASPNETCORE_FORWARDEDHEADERS_ENABLED` stays unset. `TrustedForwardingTests` covers `[client, Cloudflare, 10.x]` and `[1.2.3.4, client, Cloudflare, 10.x]` from `::1`; both resolve to the client. After deploy, confirm the login rate-limit bucket separates two real clients, since the console itself was not measured with a log.
