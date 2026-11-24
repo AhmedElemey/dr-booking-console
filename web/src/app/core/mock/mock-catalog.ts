@@ -135,6 +135,17 @@ export const MOCK_CATALOG: FeatureDefinition[] = [
     },
   ),
   f(
+    'whatsappOtp',
+    'WhatsApp login codes',
+    'رموز الدخول عبر واتساب',
+    'Send login codes over WhatsApp instead of SMS, falling back to SMS if it fails.',
+    'إرسال رمز الدخول عبر واتساب بدل SMS، مع الرجوع إلى SMS عند الفشل.',
+    'Notifications',
+    true,
+    false,
+    null,
+  ),
+  f(
     'waitingList',
     'Waiting list',
     'قائمة الانتظار',

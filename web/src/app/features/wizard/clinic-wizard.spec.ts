@@ -99,7 +99,7 @@ describe('ClinicWizard', () => {
     await fixture.whenStable();
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.querySelectorAll('.feature-row').length).toBe(25);
+    expect(el.querySelectorAll('.feature-row').length).toBe(26);
     expect(el.querySelectorAll('.feature-row.soon').length).toBe(1);
     expect(el.querySelectorAll('.badge-repo').length).toBe(2);
     expect(el.querySelectorAll('.badge-soon').length).toBe(1);
@@ -113,6 +113,7 @@ describe('ClinicWizard', () => {
     const phase2 = [
       'onlinePayments',
       'whatsappReminders',
+      'whatsappOtp',
       'waitingList',
       'liveQueue',
       'manualReview',
