@@ -146,7 +146,8 @@ public sealed class ProvisioningEngine(
                     clinic.Status = ClinicStatus.Active;
                 }
 
-                finalMessage = $"Provisioned {clinic.Repos.Count} repositories. The clinic is {clinic.Status}.";
+                finalMessage = $"Provisioned {clinic.Repos.Count} repositories. The clinic is {clinic.Status}. "
+                    + "Before go-live, set the ReverseProxy__* variables on each Render service (DEPLOYMENT.md, Forwarding behind Render), or rate limits key on the proxy IP.";
             }
 
             clinic.UpdatedAt = clock.GetUtcNow();

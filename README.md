@@ -99,3 +99,5 @@ dotnet test
 # web
 cd web && npm run lint && npm test && npm run build && npm run build:mock
 ```
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for production steps, including the required Render forwarding settings.

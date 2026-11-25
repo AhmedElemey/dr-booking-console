@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 
 namespace Console.Tests;
 
@@ -44,6 +45,19 @@ public sealed class TrustedForwardingTests(PostgresFixture db) : IClassFixture<P
         var otherClient = await LoginAsync(factory, "192.0.2.10", "203.0.113.2, 192.0.2.11");
         Assert.Equal(400, otherClient.Response.StatusCode);
         Assert.Equal("203.0.113.2", otherClient.Connection.RemoteIpAddress?.ToString());
+    }
+
+    [Theory]
+    [InlineData(null, null, false)]
+    [InlineData("::1", null, true)]
+    [InlineData(null, "10.0.0.0/8", true)]
+    public void Production_warning_applies_only_when_no_proxy_or_network_is_configured(string? proxy, string? network, bool expected)
+    {
+        var values = new Dictionary<string, string?>();
+        if (proxy is not null) values["ReverseProxy:KnownProxies:0"] = proxy;
+        if (network is not null) values["ReverseProxy:KnownNetworks:0"] = network;
+        var config = new ConfigurationBuilder().AddInMemoryCollection(values).Build();
+        Assert.Equal(expected, Console.Api.Infrastructure.TrustedForwarding.HasTrustConfigured(config));
     }
 
     [Theory]
