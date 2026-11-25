@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 
 namespace Console.Tests;
 
@@ -55,7 +56,7 @@ public sealed class TrustedForwardingTests(PostgresFixture db) : IClassFixture<P
         var values = new Dictionary<string, string?>();
         if (proxy is not null) values["ReverseProxy:KnownProxies:0"] = proxy;
         if (network is not null) values["ReverseProxy:KnownNetworks:0"] = network;
-        var config = new Microsoft.Extensions.Configuration.ConfigurationBuilder().AddInMemoryCollection(values).Build();
+        var config = new ConfigurationBuilder().AddInMemoryCollection(values).Build();
         Assert.Equal(expected, Console.Api.Infrastructure.TrustedForwarding.HasTrustConfigured(config));
     }
 
